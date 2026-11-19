@@ -37,10 +37,6 @@ ChatLuna v2 图床插件。在 WebUI 侧栏「图床」页面上传并分类管�
 
 支持 PNG、JPEG、GIF、WebP、BMP，格式按文件内容识别。分类名和文件名不能包含空白和 `/ \ : * ? " < > | & '`，不能以 `.` 或 `-` 开头，最长 64 个字符。
 
-## 发布
-
-`@chatluna/*` 尚未发布到 npm，构建依赖 ChatLuna v2 仓库，所以在本机发布：修改 `package.json` 的 `version` 并提交推送后运行 `node scripts/publish.mjs`（`--dry-run` 只演练，开了两步验证时加 `--otp=<验证码>`）。脚本在 v2 副本中清空产物、构建、测试并打包，发布到 npm 后给当前提交打 `v<版本>` tag 并推送。
-
 ## 许可
 
 MIT
