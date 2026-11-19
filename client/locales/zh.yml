@@ -1,5 +1,4 @@
 image-host.title: 图床
-image-host.description: "上传并分类管理图片。Bot 按注入的提示词用图片地址发送图片：「地址/分类名」随机返回一张，「地址/分类名/文件名」返回指定图片。"
 image-host.loadFailed: 图库加载失败
 image-host.cancel: 取消
 image-host.save: 保存

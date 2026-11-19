@@ -1,5 +1,4 @@
 image-host.title: Image Host
-image-host.description: "Upload and categorize images. The bot sends them by URL following the injected prompt: \"URL/category\" returns a random image and \"URL/category/file\" a specific one."
 image-host.loadFailed: Failed to load the library
 image-host.cancel: Cancel
 image-host.save: Save

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { Alert, AlertDescription, AlertTitle, Button, ButtonLabel, PageHeader, Skeleton, Spinner, Tabs, TabsList, TabsTrigger } from '@chatluna/ui-kit'
-import { ImagesIcon, MessageSquareTextIcon, PlusIcon, RefreshCwIcon, Settings2Icon, SparklesIcon } from 'lucide-react'
+import { PlusIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction, useLive } from '@chatluna/ui-client/client'
 import { useT } from './i18n'
 import { Gallery } from './gallery'
@@ -35,7 +35,6 @@ export function ImageHostPage() {
         <div className="flex min-h-full flex-col gap-5 p-(--page-gutter) text-sm leading-5">
             <PageHeader
                 title={t('image-host.title')}
-                description={t('image-host.description')}
                 actions={(
                     <>
                         <Button variant="outline" size="sm" disabled={rescan.pending} onClick={() => void rescan({})}>
@@ -54,19 +53,10 @@ export function ImageHostPage() {
                 )}
             >
                 <Tabs value={tab} onValueChange={(value) => setParams(value === 'images' ? {} : { tab: String(value) })}>
-                    <TabsList variant="line">
-                        <TabsTrigger value="images">
-                            <ImagesIcon />
-                            {t('image-host.tab.images')}
-                        </TabsTrigger>
-                        <TabsTrigger value="prompt">
-                            <MessageSquareTextIcon />
-                            {t('image-host.tab.prompt')}
-                        </TabsTrigger>
-                        <TabsTrigger value="settings">
-                            <Settings2Icon />
-                            {t('image-host.tab.settings')}
-                        </TabsTrigger>
+                    <TabsList>
+                        <TabsTrigger value="images">{t('image-host.tab.images')}</TabsTrigger>
+                        <TabsTrigger value="prompt">{t('image-host.tab.prompt')}</TabsTrigger>
+                        <TabsTrigger value="settings">{t('image-host.tab.settings')}</TabsTrigger>
                     </TabsList>
                 </Tabs>
             </PageHeader>
