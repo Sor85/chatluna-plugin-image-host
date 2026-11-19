@@ -12,9 +12,20 @@ export interface ImageEntry {
 export interface CategoryView {
     name: string
     description: string
-    /** 关闭后该分类不写进提示词，Bot 看不到，指令仍可使用。 */
+    /** 关闭后该分类不写进提示词，公开图片地址返回 404，只在页面中管理。 */
     exposed: boolean
     images: ImageEntry[]
+}
+
+/** 插件设置，在侧栏页面修改，保存在 `meta.json`。 */
+export interface Settings {
+    injectPrompt: boolean
+    /** 每个分类在提示词中最多列出的文件数，0 时只列分类。 */
+    promptFileLimit: number
+    /** 聊天平台下载图片使用的服务器地址；空字符串时使用 ChatLuna 服务器自身地址。 */
+    baseUrl: string
+    /** 单张上传上限，单位 MB。 */
+    maxFileSize: number
 }
 
 export interface LibraryView {
@@ -26,9 +37,15 @@ export interface LibraryView {
         preview: string
         enabled: boolean
     }
-    prefix: string
-    maxFileSize: number
-    /** 图片预览地址前缀，后接 `/<分类>/<文件>`；未加载服务端路由时为空。 */
+    settings: Settings
+    defaultSettings: Settings
+    /** 设置中图片访问地址留空时使用的服务器地址；没有 server 服务时为空。 */
+    serverUrl: string
+    /** 提示词和平台使用的图片根地址，后接 `/<分类>[/<文件>]`；没有 server 服务时为空。 */
+    imageUrl: string
+    /** 图片根目录的绝对路径，直接放入 `<分类>/<文件>` 后重新扫描即可载入。 */
+    imageDir: string
+    /** 页面预览地址前缀，后接 `/<分类>/<文件>`，需要登录。 */
     fileRoute: string
 }
 

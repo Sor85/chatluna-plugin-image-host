@@ -6,10 +6,10 @@ import { renderPrompt } from './utils'
 
 /**
  * 给每个 Agent 注册一个 context 区提示词块，列出可见分类和图片的 HTTP 地址，Bot 用内置的 `<img src>` 发图。
- * context 区每轮渲染、内容变化才重发；渲染为空或没有图片地址时不注入。插件加载前已打开的 Agent 也补上，
- * 关闭的 Agent 从表中移除，插件卸载时撤回全部提示词块。
+ * context 区每轮渲染、内容变化才重发；设置中关闭注入、渲染为空或没有图片地址时不注入，改设置无需重载插件。
+ * 插件加载前已打开的 Agent 也补上，关闭的 Agent 从表中移除，插件卸载时撤回全部提示词块。
  */
-export function registerPrompt(ctx: Context, library: ImageLibrary, fileLimit: number, imageUrl: () => string | undefined) {
+export function registerPrompt(ctx: Context, library: ImageLibrary, imageUrl: () => string) {
     const blocks = new Map<Agent, Disposable>()
     const attach = (agent: Agent) => {
         if (blocks.has(agent)) return
@@ -17,8 +17,9 @@ export function registerPrompt(ctx: Context, library: ImageLibrary, fileLimit: n
             id: 'image-host',
             zone: 'context',
             content: () => {
+                const { injectPrompt, promptFileLimit } = library.settings
                 const url = imageUrl()
-                return url ? renderPrompt(library.prompt, library.view(), fileLimit, url) : ''
+                return injectPrompt && url ? renderPrompt(library.prompt, library.view(), promptFileLimit, url) : ''
             },
         }))
     }

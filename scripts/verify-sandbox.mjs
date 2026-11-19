@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 用 onebot-sandbox 的隔离测试空间验收图床插件的聊天指令和 Bot 发图。
+// 验收图床插件：直接请求公开图片地址检查随机轮转与指定取图，再用 onebot-sandbox 的隔离测试空间验收 Bot 按提示词发图。
 //
 // 前提：宿主已加载本插件，IMAGE_HOST_CATEGORY 指定的分类对 Bot 可见，且至少有 3 张大小互不相同的图片。
 // 环境变量：
@@ -7,7 +7,7 @@
 //   ONEBOT_SANDBOX_URL     默认 http://127.0.0.1:61901
 //   IMAGE_HOST_DATA_DIR    插件数据目录，用于读取测试图片大小，必填
 //   IMAGE_HOST_CATEGORY    测试分类名，必填
-//   IMAGE_HOST_PREFIX      指令前缀，默认 /
+//   IMAGE_HOST_URL         图片根地址，默认 http://127.0.0.1:5028/image-host/raw
 //   IMAGE_HOST_SKIP_LLM    设为 1 时跳过需要模型的 Bot 发图用例
 //   IMAGE_HOST_SANDBOX_REPORT  报告输出路径（权限 600），可选
 import assert from 'node:assert/strict'
@@ -19,7 +19,7 @@ const endpoint = process.env.ONEBOT_SANDBOX_URL ?? 'http://127.0.0.1:61901'
 const token = process.env.ONEBOT_SANDBOX_TOKEN
 const dataDir = process.env.IMAGE_HOST_DATA_DIR
 const category = process.env.IMAGE_HOST_CATEGORY
-const prefix = process.env.IMAGE_HOST_PREFIX ?? '/'
+const imageUrl = (process.env.IMAGE_HOST_URL ?? 'http://127.0.0.1:5028/image-host/raw').replace(/\/+$/, '')
 if (!token || !dataDir || !category) throw new Error('需要 ONEBOT_SANDBOX_TOKEN、IMAGE_HOST_DATA_DIR 和 IMAGE_HOST_CATEGORY 环境变量')
 
 const folder = path.join(dataDir, 'images', category)
@@ -65,13 +65,18 @@ function record(label, content, reply, detail) {
     console.log(`通过：${label}${detail ? ` ${JSON.stringify(detail)}` : ''}`)
 }
 
-async function expectImage(label, conversationId, content, file) {
-    const reply = await exchange(conversationId, content)
-    assert.equal(reply.images.length, 1, `${label} 应返回一张图片；实际文本：${reply.text}`)
-    const sent = nameOf(reply.images[0].size)
-    assert.ok(sent, `${label} 返回的图片不在测试分类中（大小 ${reply.images[0].size}）`)
-    if (file) assert.equal(sent, file, `${label} 应发送 ${file}`)
-    record(label, content, reply, { file: sent })
+const encodePath = (path) => path.split('/').map(encodeURIComponent).join('/')
+
+/** 请求公开图片地址，按大小识别返回的是哪一张。 */
+async function expectHttp(label, path, file) {
+    const response = await fetch(`${imageUrl}/${encodePath(path)}`)
+    assert.equal(response.status, 200, `${label} 应返回 200`)
+    assert.match(response.headers.get('content-type') ?? '', /^image\//)
+    const sent = nameOf((await response.arrayBuffer()).byteLength)
+    assert.ok(sent, `${label} 返回的图片不在测试分类中`)
+    if (file) assert.equal(sent, file, `${label} 应返回 ${file}`)
+    results.push({ label, path, file: sent, cacheControl: response.headers.get('cache-control') })
+    console.log(`通过：${label} ${sent}`)
     return sent
 }
 
@@ -93,34 +98,32 @@ try {
         ],
     })
 
-    // 一轮内每张图只出现一次，换轮时不与上一张相同。洗牌袋在宿主内存中跨会话保留，起点可能在上一轮中途，
+    // 一轮内每张图只出现一次，换轮时不与上一张相同。洗牌袋在宿主内存中跨次保留，起点可能在上一轮中途，
     // 所以检查是否存在偏移 k，使前 k 张互不相同且之后每 n 张恰好覆盖全部图片。
     const n = files.length
     const round = []
-    for (let index = 0; index < n * 3; index++) round.push(await expectImage(`随机发图 #${index + 1}`, groupChat, `${prefix}${category}`))
+    for (let index = 0; index < n * 3; index++) round.push(await expectHttp(`随机地址 #${index + 1}`, category))
     const distinct = (items) => new Set(items).size === items.length
     const aligned = Array.from({ length: n }, (_, k) => k).some((k) =>
         distinct(round.slice(0, k)) && [0, 1].every((r) => distinct(round.slice(k + r * n, k + (r + 1) * n))))
-    assert.ok(aligned, `随机发图未按轮次不重复：${round.join(',')}`)
-    for (let index = 1; index < round.length; index++) assert.notEqual(round[index], round[index - 1], '相邻两次随机发了同一张')
+    assert.ok(aligned, `随机地址未按轮次不重复：${round.join(',')}`)
+    for (let index = 1; index < round.length; index++) assert.notEqual(round[index], round[index - 1], '相邻两次随机返回了同一张')
     console.log(`通过：洗牌轮转 ${round.join(' → ')}`)
 
     const target = files[1]
-    await expectImage('指定文件', groupChat, `${prefix}${category}/${target.file}`, target.file)
-    const stem = target.file.replace(/\.[^.]+$/, '').toUpperCase()
-    await expectImage('省略扩展名且忽略大小写', groupChat, `${prefix}${category}/${stem}`, target.file)
-    await expectImage('@机器人后发送指令', groupChat, `<at id="${bot}"/> ${prefix}${category}/${files[0].file}`, files[0].file)
+    await expectHttp('指定文件', `${category}/${target.file}`, target.file)
+    await expectHttp('省略扩展名且忽略大小写', `${category}/${target.file.replace(/\.[^.]+$/, '').toUpperCase()}`, target.file)
+    for (const path of [`${category}/不存在的图片.png`, `不存在的分类${bot}`]) {
+        const response = await fetch(`${imageUrl}/${encodePath(path)}`)
+        assert.equal(response.status, 404, `${path} 应返回 404`)
+        results.push({ label: `不存在：${path}`, status: response.status })
+        console.log(`通过：不存在 ${path} → 404`)
+    }
 
-    const missing = await exchange(groupChat, `${prefix}${category}/不存在的图片.png`)
-    assert.equal(missing.images.length, 0)
-    assert.match(missing.text, /没有图片/)
-    record('不存在的文件', `${prefix}${category}/不存在的图片.png`, missing)
-
-    const unknown = await exchange(groupChat, `${prefix}不存在的分类${bot}`, { timeoutSeconds: 8 })
-    assert.equal(unknown.images.length, 0, '未知分类不应发图')
-    record('未知分类交还后续处理', `${prefix}不存在的分类${bot}`, unknown)
-
-    await expectImage('私聊随机发图', `private:${[user, bot].sort().join(':')}`, `${prefix}${category}`)
+    // 不再注册聊天指令：「/分类名」不应被插件拦截发图。
+    const plain = await exchange(groupChat, `/${category}`, { timeoutSeconds: 8 })
+    assert.equal(plain.images.length, 0, '「/分类名」不应再触发发图')
+    record('不再拦截 /分类名', `/${category}`, plain)
 
     if (process.env.IMAGE_HOST_SKIP_LLM !== '1') {
         const content = `<at id="${bot}"/> 请从图床的「${category}」分类里发一张图片给我`
@@ -130,9 +133,9 @@ try {
         const call_ = await call('get_model_call', { spaceId, conversationId: groupChat, botId: bot })
         const request = JSON.stringify(call_)
         assert.ok(request.includes(`${category}（${files.length} 张）`), '模型请求中缺少注入的分类清单')
-        assert.ok(request.includes('/image-host/raw/分类名/文件名'), '模型请求中缺少图片地址说明')
+        assert.ok(request.includes(`${imageUrl}/分类名/文件名`), '模型请求中缺少图片地址说明')
         const response = JSON.stringify(call_.response ?? call_)
-        assert.match(response, /<img src=\\?"https?:\/\/[^"\\]*\/image-host\/raw\//, '模型回复中没有使用图床的 HTTP 地址')
+        assert.ok(response.includes(`<img src=\\"${imageUrl}/`) || response.includes(`<img src="${imageUrl}/`), '模型回复中没有使用图床的 HTTP 地址')
         record('Bot 按提示词发图', content, reply, { injected: true })
     }
 

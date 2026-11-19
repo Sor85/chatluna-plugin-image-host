@@ -1,8 +1,8 @@
-import type { CategoryView } from './types'
+import type { CategoryView, Settings } from './types'
 
 // 本文件不依赖 Node 内置模块，WebUI 客户端也直接导入。
-// 分类名和文件名同时是磁盘路径段和聊天指令片段：排除路径分隔符、Windows 保留字符、
-// 会被消息元素转义的 & < > " '，以及空白（指令按空白切分参数）。
+// 分类名和文件名同时是磁盘路径段和图片地址片段：排除路径分隔符、Windows 保留字符、
+// 会被消息元素转义的 & < > " '，以及空白（Bot 写进 src 属性时容易断开）。
 const forbidden = /[\s/\\:*?"<>|&']/u
 
 export const imageTypes = {
@@ -67,6 +67,13 @@ export function uniqueFileName(name: string, taken: (name: string) => boolean) {
     }
 }
 
+export const DEFAULT_SETTINGS: Settings = {
+    injectPrompt: true,
+    promptFileLimit: 50,
+    baseUrl: '',
+    maxFileSize: 10,
+}
+
 /** 供平台下载图片的公开路由，只提供 Bot 可见分类；页面预览走另一条需要登录的路由。 */
 export const PUBLIC_ROUTE = '/image-host/raw'
 
@@ -76,7 +83,7 @@ export function publicImageUrl(base: string) {
 }
 
 export const DEFAULT_PROMPT = [
-    '图床图片的地址为「{url}/分类名/文件名」。只使用下面列出的图片，按分类描述挑选：',
+    '图床图片的地址为「{url}/分类名/文件名」，「{url}/分类名」随机返回该分类中的一张。只使用下面列出的分类和图片，按分类描述挑选：',
     '{categories}',
 ].join('\n')
 

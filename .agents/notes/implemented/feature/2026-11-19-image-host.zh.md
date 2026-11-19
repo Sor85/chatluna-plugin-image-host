@@ -4,21 +4,23 @@ Status: implemented
 
 ## Problem
 
-需要一个 ChatLuna v2 插件：在 WebUI 侧栏上传并分类管理图片，让 Bot 通过可见、可修改的提示词使用这些图片；聊天中 `/分类名` 随机发图、`/分类名/文件名` 发送指定图片；分类内图片去重，随机发送不重复。
+需要一个 ChatLuna v2 插件：在 WebUI 侧栏上传并分类管理图片，让 Bot 通过可见、可修改的提示词使用这些图片；`/分类名` 随机发图、`/分类名/文件名` 发送指定图片；分类内图片去重，随机发送不重复。后续要求：不注册聊天指令，插件设置全部移到侧栏页面。
 
 ## Decision
 
-- 以磁盘为准：`images/<分类>/<文件>`，`meta.json` 只存描述、可见性、提示词模板和哈希缓存（`src/library.ts` 的 `ImageLibrary`）。修改串行执行，结束后原子写回元数据并刷新 `image-host.library` 状态。
-- 不注册自定义回复元素，Bot 用 v2 内置的 `<img src>` 发送图片，`src` 为 HTTP 地址：`src/public.ts` 的 `/image-host/raw/:category/:file` 不鉴权、只提供 Bot 可见分类，v2 把 http 地址原样交给平台下载，不需要 `fs:read` 授权，平台不在本机时也可用（配置 `baseUrl` 填平台能访问的地址）。`src/prompt.ts` 在 `chatluna/agent-open` 时给每个 Agent 注册 context 区提示词块 `image-host`（加载前已打开的 Agent 用 `ctx.agents.list()` 补上），模板中 `{url}` 展开为图片根地址、`{categories}` 展开为可见分类及文件名，每轮渲染、变化才重发，渲染为空时不注入。默认模板只给图片地址和清单，不教 `<img>` 用法，v2 已注入内置元素说明。模板在侧栏页面编辑并预览。
-- 指令用前置中间件（`src/commands.ts`）匹配原始文本，因为分类动态增删且可能含 `.`，无法注册为 Koishi 指令；分类不存在或与已注册指令同名时交还后续处理。
-- 去重以 SHA-256 为准、范围是单个分类：上传跳过重复、跨分类移动拒绝重复、`dedupe()` 清理现存重复。随机发图用每分类一个洗牌袋，一轮内不重复、换轮不与上一张相同。
+- 以磁盘为准：`images/<分类>/<文件>`，`meta.json` 只存设置、描述、可见性、提示词模板和哈希缓存（`src/library.ts` 的 `ImageLibrary`）。修改串行执行，结束后原子写回元数据并刷新 `image-host.library` 状态。
+- 不注册自定义回复元素，Bot 用 v2 内置的 `<img src>` 发送图片，`src` 为 HTTP 地址：`src/public.ts` 的 `/image-host/raw/:category`（随机）与 `/image-host/raw/:category/:file`（指定）不鉴权、只提供 Bot 可见分类，v2 把 http 地址原样交给平台下载，不需要 `fs:read` 授权，平台不在本机时也可用（设置 `baseUrl` 填平台能访问的地址）。`src/prompt.ts` 在 `chatluna/agent-open` 时给每个 Agent 注册 context 区提示词块 `image-host`（加载前已打开的 Agent 用 `ctx.agents.list()` 补上），模板中 `{url}` 展开为图片根地址、`{categories}` 展开为可见分类及文件名，每轮渲染、变化才重发，渲染为空时不注入。默认模板只给图片地址和清单，不教 `<img>` 用法，v2 已注入内置元素说明。模板在侧栏页面编辑并预览。
+- 不注册聊天指令：「/分类名」「/分类名/文件名」落在图片地址上，Bot 写进 `<img src>` 即可，插件因此不再依赖 Koishi。
+- 插件没有配置项，`Config` 只是带说明的空 Schema（没有 Schema 时插件管理页回退成 YAML 编辑器）：设置存在 `meta.json` 的 `settings`，只存与 `DEFAULT_SETTINGS` 不同的项，用 `image-host.settings.save` 保存，读取处每次取 `library.settings`，保存后立即生效。数据目录固定为 `data/chatluna/image-host`，因为设置就存在其中。
+- 去重以 SHA-256 为准、范围是单个分类：上传跳过重复、跨分类移动拒绝重复、`dedupe()` 清理现存重复。随机地址用每分类一个洗牌袋，一轮内不重复、换轮不与上一张相同。
 - 页面（`client/`）用 `ctx.slots.route` 注册 `/image-host/:category?`；上传走 Base64 action 并由客户端分批；预览走不在 `/api` 下、校验登录 Cookie 的 `/image-host/files/:category/:file`。
 - `package.json` 的 `peerDependencies` 不声明 `koishi`，否则宿主按 Koishi 旧插件包装上下文，`ctx.server` 变为 Koa 外观。
 
 ## Alternatives considered
 
 - 数据库表存索引：多一份需要与磁盘同步的状态，直接复制文件进目录的场景也更复杂。
-- 为每个分类注册 Koishi 指令：`/` 与 `.` 会被拆成子指令，分类增删需要反复注册。
+- 聊天指令（前置中间件匹配「前缀+分类」）：曾实现，按要求移除；与图片地址功能重复，还需要处理与已有指令重名。
+- 设置放宿主插件配置：需要到插件管理页修改且改后重载插件，按要求集中到侧栏页面。
 - LLM 工具发图：每张图多一次工具往返；`<img>` 可以直接内嵌在消息里。
 - 自定义 `<image-host>` 回复元素：能隐藏磁盘路径并由插件随机取图，但与内置 `<img>` 功能重复，按要求不新增表达方式。
 - 提示词给本地绝对路径：需要 `fs:read` 授权，路径暴露宿主目录结构，按要求改为 HTTP 地址。
@@ -26,8 +28,9 @@ Status: implemented
 
 ## Consequences
 
-- 洗牌袋只在内存中，重启后重新开始一轮；只用于指令，Bot 自己挑选提示词中列出的文件。
+- 洗牌袋只在内存中，重启后重新开始一轮；只作用于随机地址。
+- 旧版宿主配置中的插件配置项不再生效，需在页面中重新设置。
 - Bot 可见分类中的图片可被任何能访问服务器的人按地址下载，不需要登录；不希望公开的分类应关闭「Bot 可见」。
-- `ctx.server.baseUrl` 在监听 `0.0.0.0` 时为 `127.0.0.1`，平台不在本机时必须配置 `baseUrl`。
+- `ctx.server.baseUrl` 在监听 `0.0.0.0` 时为 `127.0.0.1`，平台不在本机时必须在设置中填写图片访问地址。
 - 同一张图片允许出现在不同分类中。
 - 沙盒验收脚本 `scripts/verify-sandbox.mjs` 需要预先准备好对 Bot 可见、含 3 张大小不同图片的分类。

@@ -5,8 +5,8 @@ import type {} from '@chatluna/ui-server'
 import type {} from '@chatluna/ui-client/client'
 import type { Request } from '@cordisjs/plugin-server'
 import type { ImageLibrary } from './library'
-import type { DedupeResult, LibraryView, UploadFile, UploadResult } from './types'
-import { DEFAULT_PROMPT, PUBLIC_ROUTE, renderPrompt } from './utils'
+import type { DedupeResult, LibraryView, Settings, UploadFile, UploadResult } from './types'
+import { DEFAULT_PROMPT, DEFAULT_SETTINGS, PUBLIC_ROUTE, renderPrompt } from './utils'
 
 export const FILE_ROUTE = '/image-host/files'
 
@@ -24,16 +24,16 @@ declare module '@chatluna/ui-client/client' {
         'image-host.dedupe'(input: { category?: string }): DedupeResult
         'image-host.rescan'(input: {}): void
         'image-host.prompt.save'(input: { template?: string }): void
+        'image-host.settings.save'(input: Partial<Settings>): void
     }
 }
 
 export interface WebOptions {
-    prefix: string
-    injectPrompt: boolean
-    promptFileLimit: number
-    imageUrl: () => string | undefined
-    maxFileSize: number
+    serverUrl: () => string
+    imageUrl: () => string
 }
+
+const MB = 1024 * 1024
 
 const name = Schema.string().min(1).max(64).required()
 
@@ -45,17 +45,21 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
     webui.state('image-host.library', {
         get: () => {
             const categories = library.view()
+            const { settings } = library
             const url = options.imageUrl()
             return {
                 categories,
                 prompt: {
                     template: library.prompt,
                     defaultTemplate: DEFAULT_PROMPT,
-                    preview: options.injectPrompt && url ? renderPrompt(library.prompt, categories, options.promptFileLimit, url) : '',
-                    enabled: options.injectPrompt,
+                    preview: settings.injectPrompt && url ? renderPrompt(library.prompt, categories, settings.promptFileLimit, url) : '',
+                    enabled: settings.injectPrompt,
                 },
-                prefix: options.prefix,
-                maxFileSize: options.maxFileSize,
+                settings,
+                defaultSettings: DEFAULT_SETTINGS,
+                serverUrl: options.serverUrl(),
+                imageUrl: url,
+                imageDir: library.imageDir,
                 fileRoute: FILE_ROUTE,
             }
         },
@@ -75,7 +79,7 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
             category: name,
             files: Schema.array(Schema.object({ name: Schema.string().max(255).required(), content: Schema.string().required() })).min(1).max(50).required(),
         }),
-    }, ({ category, files }) => library.upload(category, files, options.maxFileSize))
+    }, ({ category, files }) => library.upload(category, files, library.settings.maxFileSize * MB))
     webui.action('image-host.image.move', {
         input: Schema.object({ category: name, file: name, target: Schema.string().max(64), rename: Schema.string().max(64) }),
     }, ({ category, file, target, rename }) => library.moveImage(category, file, { category: target, file: rename }))
@@ -89,6 +93,14 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
     webui.action('image-host.prompt.save', {
         input: Schema.object({ template: Schema.string().max(8000) }),
     }, ({ template }) => library.setPrompt(template))
+    webui.action('image-host.settings.save', {
+        input: Schema.object({
+            injectPrompt: Schema.boolean(),
+            promptFileLimit: Schema.natural().max(500),
+            baseUrl: Schema.string().max(500).pattern(/^(https?:\/\/[^\s/?#]+(\/[^\s?#]*)?)?$/u),
+            maxFileSize: Schema.natural().min(1).max(50),
+        }),
+    }, (patch) => library.setSettings(patch))
 
     ctx.inject(['server', 'chatluna_server'], (ctx) => {
         ctx.chatluna_webui.exclude(FILE_ROUTE)

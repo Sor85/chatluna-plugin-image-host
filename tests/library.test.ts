@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ImageLibrary } from '../src/library'
-import { DEFAULT_PROMPT } from '../src/utils'
+import { DEFAULT_PROMPT, DEFAULT_SETTINGS } from '../src/utils'
 import { jpeg, png, upload } from './fixtures'
 
 const MB = 1024 * 1024
@@ -57,6 +57,20 @@ describe('categories', () => {
         expect(reloaded.prompt).toBe('自定义 {categories}')
         await reloaded.setPrompt(undefined)
         expect(reloaded.prompt).toBe(DEFAULT_PROMPT)
+    })
+})
+
+describe('settings', () => {
+    it('stores only values that differ from the defaults and normalizes the address', async () => {
+        expect(library.settings).toEqual(DEFAULT_SETTINGS)
+        await library.setSettings({ promptFileLimit: 5, baseUrl: ' http://192.168.1.2:5028/ ' })
+        await library.setSettings({ injectPrompt: DEFAULT_SETTINGS.injectPrompt })
+        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toEqual({ promptFileLimit: 5, baseUrl: 'http://192.168.1.2:5028' })
+        const reloaded = new ImageLibrary(root, () => {})
+        await reloaded.load()
+        expect(reloaded.settings).toEqual({ ...DEFAULT_SETTINGS, promptFileLimit: 5, baseUrl: 'http://192.168.1.2:5028' })
+        await reloaded.setSettings(DEFAULT_SETTINGS)
+        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toBeUndefined()
     })
 })
 

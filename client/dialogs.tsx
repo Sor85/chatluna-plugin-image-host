@@ -208,10 +208,11 @@ export function MoveDialog({ image, category, categories, onClose }: {
     )
 }
 
-export function PreviewDialog({ src, image, command, onClose }: {
+export function PreviewDialog({ src, image, address, onClose }: {
     src: string
     image: ImageEntry
-    command: string
+    /** 公开图片地址；隐藏分类没有。 */
+    address?: string
     onClose(): void
 }) {
     const t = useT()
@@ -225,10 +226,12 @@ export function PreviewDialog({ src, image, command, onClose }: {
                     </DialogDescription>
                 </DialogHeader>
                 <img src={src} alt={image.file} className="max-h-[60vh] w-full rounded-lg bg-muted/40 object-contain" />
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {t('image-host.usage.file')}
-                    <CodeValue value={command} copy={t('image-host.usage.copy')} />
-                </div>
+                {address !== undefined && (
+                    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        {t('image-host.usage.file')}
+                        <CodeValue value={address} copy={t('image-host.usage.copy')} />
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     )

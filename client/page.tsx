@@ -1,20 +1,23 @@
 import * as React from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { Alert, AlertDescription, AlertTitle, Button, ButtonLabel, PageHeader, Skeleton, Spinner, Tabs, TabsList, TabsTrigger } from '@chatluna/ui-kit'
-import { ImagesIcon, MessageSquareTextIcon, PlusIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react'
+import { ImagesIcon, MessageSquareTextIcon, PlusIcon, RefreshCwIcon, Settings2Icon, SparklesIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction, useLive } from '@chatluna/ui-client/client'
 import { useT } from './i18n'
 import { Gallery } from './gallery'
 import { PromptEditor } from './prompt'
+import { SettingsPanel } from './settings'
 import { CategoryDialog } from './dialogs'
 import { reportDedupe } from './upload'
+
+const tabs = ['images', 'prompt', 'settings'] as const
 
 export function ImageHostPage() {
     const t = useT()
     const navigate = useNavigate()
     const { category } = useParams()
     const [params, setParams] = useSearchParams()
-    const tab = params.get('tab') === 'prompt' ? 'prompt' : 'images'
+    const tab = tabs.find((item) => item === params.get('tab')) ?? 'images'
     const [creating, setCreating] = React.useState(false)
     const query = useLive('image-host.library')
     const library = query.data ?? undefined
@@ -50,7 +53,7 @@ export function ImageHostPage() {
                     </>
                 )}
             >
-                <Tabs value={tab} onValueChange={(value) => setParams(value === 'prompt' ? { tab: 'prompt' } : {})}>
+                <Tabs value={tab} onValueChange={(value) => setParams(value === 'images' ? {} : { tab: String(value) })}>
                     <TabsList variant="line">
                         <TabsTrigger value="images">
                             <ImagesIcon />
@@ -59,6 +62,10 @@ export function ImageHostPage() {
                         <TabsTrigger value="prompt">
                             <MessageSquareTextIcon />
                             {t('image-host.tab.prompt')}
+                        </TabsTrigger>
+                        <TabsTrigger value="settings">
+                            <Settings2Icon />
+                            {t('image-host.tab.settings')}
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -73,7 +80,9 @@ export function ImageHostPage() {
                 ? <Skeleton className="h-64 w-full" />
                 : tab === 'prompt'
                     ? <PromptEditor library={library} />
-                    : <Gallery library={library} selected={category} onSelect={open} onCreate={() => setCreating(true)} />}
+                    : tab === 'settings'
+                        ? <SettingsPanel library={library} />
+                        : <Gallery library={library} selected={category} onSelect={open} onCreate={() => setCreating(true)} />}
             <CategoryDialog
                 open={creating}
                 taken={library?.categories.map((item) => item.name) ?? []}

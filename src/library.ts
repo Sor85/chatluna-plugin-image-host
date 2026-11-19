@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ChatLunaError, notFound, validationError } from '@chatluna/protocol'
-import type { CategoryView, DedupeResult, ImageEntry, UploadFile, UploadResult } from './types'
-import { DEFAULT_PROMPT, invalidName, mimeOfName, normalizeFileName, sniffImage, uniqueFileName } from './utils'
+import type { CategoryView, DedupeResult, ImageEntry, Settings, UploadFile, UploadResult } from './types'
+import { DEFAULT_PROMPT, DEFAULT_SETTINGS, invalidName, mimeOfName, normalizeFileName, sniffImage, uniqueFileName } from './utils'
 
 interface CategoryMeta {
     description?: string
@@ -12,6 +12,8 @@ interface CategoryMeta {
 
 interface Meta {
     prompt?: string
+    /** 只存与默认值不同的项。 */
+    settings?: Partial<Settings>
     categories: Record<string, CategoryMeta>
     /** 以 `分类/文件` 为键的哈希缓存，大小和修改时间不变时重扫不再读文件。 */
     hashes: Record<string, { hash: string, size: number, mtime: number }>
@@ -46,7 +48,7 @@ function shuffle<T>(items: T[]) {
 }
 
 /**
- * 图库以磁盘为准：`images/<分类>/<文件>`，分类即目录。`meta.json` 只存分类描述、提示词模板和哈希缓存。
+ * 图库以磁盘为准：`images/<分类>/<文件>`，分类即目录。`meta.json` 只存分类描述、设置、提示词模板和哈希缓存。
  * 所有修改串行执行，结束后写回元数据并通知订阅方。
  */
 export class ImageLibrary {
@@ -66,6 +68,10 @@ export class ImageLibrary {
         return this.meta.prompt ?? DEFAULT_PROMPT
     }
 
+    get settings(): Settings {
+        return { ...DEFAULT_SETTINGS, ...this.meta.settings }
+    }
+
     view(): CategoryView[] {
         return [...this.categories.values()]
             .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN', { numeric: true }))
@@ -78,7 +84,7 @@ export class ImageLibrary {
             }))
     }
 
-    /** 先精确匹配，再忽略大小写匹配，方便聊天里输入英文分类名。 */
+    /** 先精确匹配，再忽略大小写匹配，容忍 Bot 写错英文分类名的大小写。 */
     find(name: string) {
         const exact = this.categories.get(name)
         if (exact) return exact
@@ -91,7 +97,7 @@ export class ImageLibrary {
         if (exact) return exact
         const lower = file.toLowerCase()
         return [...category.images.values()].find((image) => image.file.toLowerCase() === lower)
-            // 允许省略扩展名：/猫猫/a 等价于 /猫猫/a.png，仅在唯一匹配时生效。
+            // 允许省略扩展名：猫猫/a 等价于 猫猫/a.png，仅在唯一匹配时生效。
             ?? this.uniqueByStem(category, lower)
     }
 
@@ -267,6 +273,16 @@ export class ImageLibrary {
         })
     }
 
+    /** 取值范围由调用方校验；与默认值相同的项不写入，默认值变化时自动跟随。 */
+    setSettings(patch: Partial<Settings>) {
+        return this.run(async () => {
+            const next = { ...this.settings, ...patch, baseUrl: (patch.baseUrl ?? this.settings.baseUrl).trim().replace(/\/+$/u, '') }
+            const keys = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]
+            const changed = Object.fromEntries(keys.filter((key) => next[key] !== DEFAULT_SETTINGS[key]).map((key) => [key, next[key]]))
+            this.meta.settings = Object.keys(changed).length ? changed : undefined
+        })
+    }
+
     /** 传入 undefined 时恢复默认模板。 */
     setPrompt(template: string | undefined) {
         return this.run(async () => {
@@ -306,7 +322,7 @@ export class ImageLibrary {
     private async readMeta(): Promise<Meta> {
         try {
             const parsed: Partial<Meta> = JSON.parse(await readFile(join(this.root, 'meta.json'), 'utf8'))
-            return { prompt: parsed.prompt, categories: parsed.categories ?? {}, hashes: parsed.hashes ?? {} }
+            return { prompt: parsed.prompt, settings: parsed.settings, categories: parsed.categories ?? {}, hashes: parsed.hashes ?? {} }
         } catch (error) {
             if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return { categories: {}, hashes: {} }
             throw error

@@ -52,6 +52,7 @@ describe('renderPrompt', () => {
     it('lists only visible categories that have images and expands the image URL', () => {
         const text = renderPrompt(DEFAULT_PROMPT, categories, 2, 'http://127.0.0.1:5028/image-host/raw')
         expect(text).toContain('http://127.0.0.1:5028/image-host/raw/分类名/文件名')
+        expect(text).toContain('「http://127.0.0.1:5028/image-host/raw/分类名」随机')
         expect(text).not.toContain('<img')
         expect(text).toContain('- 猫猫（3 张）：可爱的猫\n  a.png、b.png 等 3 张')
         expect(text).not.toContain('隐藏')

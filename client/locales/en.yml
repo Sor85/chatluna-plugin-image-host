@@ -1,11 +1,12 @@
 image-host.title: Image Host
-image-host.description: Upload and categorize images. The bot sends them with <img> following the injected prompt; in chat, "prefix + category" sends a random image and "prefix + category/file" sends a specific one.
+image-host.description: "Upload and categorize images. The bot sends them by URL following the injected prompt: \"URL/category\" returns a random image and \"URL/category/file\" a specific one."
 image-host.loadFailed: Failed to load the library
 image-host.cancel: Cancel
 image-host.save: Save
 image-host.copied: "Copied: {text}"
 image-host.tab.images: Images
 image-host.tab.prompt: Prompt
+image-host.tab.settings: "Settings"
 image-host.empty.title: No categories
 image-host.empty.hint: Images can be uploaded after a category is created.
 image-host.rescan.action: Rescan
@@ -26,7 +27,7 @@ image-host.category.delete: Delete category
 image-host.category.actions: Actions for category "{name}"
 image-host.category.name: Name
 image-host.category.namePlaceholder: cats
-image-host.category.nameHint: The name doubles as a chat command, such as "/cats".
+image-host.category.nameHint: "The name is part of the image URL, such as \"…/cats/file\" for \"cats\"."
 image-host.category.descriptionLabel: Description
 image-host.category.descriptionPlaceholder: Cat reaction images for cute or playful topics
 image-host.category.descriptionHint: The description goes into the prompt and tells the bot when this category fits.
@@ -41,11 +42,13 @@ image-host.category.deleted: Category "{name}" deleted
 image-host.category.deleteFailed: Failed to delete category
 image-host.category.deleteTitle: Delete category "{name}"
 image-host.category.deleteBody: The category folder and its {count} images are removed from disk. This cannot be undone.
-image-host.usage.random: Random
-image-host.usage.file: Specific
+image-host.usage.random: "Random"
+image-host.usage.file: "Specific"
 image-host.usage.fileName: file
-image-host.usage.copy: Copy command
+image-host.usage.copy: "Copy URL"
 image-host.usage.drop: Drop or paste images to upload
+image-host.usage.hidden: "The category is hidden from the bot; its image URLs return 404."
+image-host.usage.noServer: "The HTTP server is not loaded, so there are no image URLs."
 image-host.upload.action: Upload
 image-host.upload.done: Uploaded {count} images
 image-host.upload.duplicates: Skipped {count} duplicate images
@@ -60,7 +63,7 @@ image-host.image.searchClear: Clear search
 image-host.image.preview: Preview {name}
 image-host.image.actions: Actions for image "{name}"
 image-host.image.view: View
-image-host.image.copyCommand: Copy send command
+image-host.image.copyUrl: "Copy image URL"
 image-host.image.move: Rename or move
 image-host.image.moveTitle: Rename or move image
 image-host.image.moveHint: The extension stays the same; moving fails when the target category already holds identical content.
@@ -77,8 +80,27 @@ image-host.prompt.saved: Prompt template saved
 image-host.prompt.saveFailed: Failed to save prompt template
 image-host.prompt.hint: "{url} expands to the image root URL (HTTP) and {placeholder} expands to the bot-visible categories with their image counts, descriptions and file names."
 image-host.prompt.missing: The template lacks {url} or {placeholder}, so the bot cannot see the image URLs or the available categories and files.
-image-host.prompt.disabled: Prompt injection is off in the plugin settings; the bot does not learn which images the host holds.
+image-host.prompt.disabled: "\"Inject prompt\" is off in Settings; the bot does not learn which images the host holds."
 image-host.prompt.preview: Injected preview
 image-host.prompt.previewEmpty: No bot-visible category has images, so nothing is injected.
 image-host.prompt.previewDisabled: Prompt injection is off.
 image-host.prompt.previewHint: The preview reflects the saved template and is regenerated from the current library every turn.
+image-host.settings.title: "Plugin settings"
+image-host.settings.reset: "Reset to defaults"
+image-host.settings.saved: "Settings saved"
+image-host.settings.saveFailed: "Failed to save settings"
+image-host.settings.range: "Whole number from {min} to {max}."
+image-host.settings.inject: "Inject prompt"
+image-host.settings.injectHint: "Inject the image host prompt into the bot, listing bot-visible categories and image URLs. The template is edited in the Prompt tab."
+image-host.settings.limit: "Files listed in prompt"
+image-host.settings.limitHint: "Maximum file names listed per category; at 0 only categories are listed and the bot can only use random URLs."
+image-host.settings.baseUrl: "Image server address"
+image-host.settings.baseUrlHint: "The server address chat platforms use to download images. When empty, ChatLuna's own server address is used; set it when the platform (such as a OneBot implementation) runs on another machine."
+image-host.settings.baseUrlInvalid: "The address must start with http:// or https:// and contain no whitespace, query or fragment."
+image-host.settings.currentUrl: "Current image root URL"
+image-host.settings.noServer: "The HTTP server is not loaded, so there are no image URLs and no prompt is injected."
+image-host.settings.maxFileSize: "Max size per image (MB)"
+image-host.settings.maxFileSizeHint: "Largest size accepted for a single upload."
+image-host.settings.dataDir: "Image folder"
+image-host.settings.dataDirHint: "Images are stored as category/file; files copied in load after Rescan."
+image-host.settings.copyPath: "Copy path"

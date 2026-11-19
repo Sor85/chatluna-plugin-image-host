@@ -123,9 +123,10 @@ function CategoryPanel({ library, category, onSelect }: {
     })
 
     const send = async (files: File[]) => {
-        const accepted = files.filter((file) => file.size <= library.maxFileSize)
+        const maxFileSize = library.settings.maxFileSize * 1024 * 1024
+        const accepted = files.filter((file) => file.size <= maxFileSize)
         for (const file of files) {
-            if (file.size > library.maxFileSize) toast.error(t('image-host.upload.failedOne', { name: file.name }), { description: t('image-host.upload.tooLarge', { size: formatSize(library.maxFileSize) }) })
+            if (file.size > maxFileSize) toast.error(t('image-host.upload.failedOne', { name: file.name }), { description: t('image-host.upload.tooLarge', { size: formatSize(maxFileSize) }) })
         }
         if (accepted.length === 0) return
         setUploading(true)
@@ -160,7 +161,8 @@ function CategoryPanel({ library, category, onSelect }: {
         toast.success(t('image-host.copied', { text }))
     }
     const images = category.images.filter((image) => matchesQuery(search, image.file))
-    const random = `${library.prefix}${category.name}`
+    // 隐藏分类不提供公开地址。
+    const random = category.exposed && library.imageUrl ? `${library.imageUrl}/${category.name}` : undefined
 
     return (
         <section
@@ -237,14 +239,20 @@ function CategoryPanel({ library, category, onSelect }: {
                 </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                    {t('image-host.usage.random')}
-                    <CodeValue value={random} copy={t('image-host.usage.copy')} />
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                    {t('image-host.usage.file')}
-                    <CodeValue value={`${random}/${t('image-host.usage.fileName')}`} />
-                </span>
+                {random === undefined
+                    ? <span>{t(library.imageUrl ? 'image-host.usage.hidden' : 'image-host.usage.noServer')}</span>
+                    : (
+                        <>
+                            <span className="inline-flex min-w-0 items-center gap-1.5">
+                                {t('image-host.usage.random')}
+                                <CodeValue value={random} copy={t('image-host.usage.copy')} />
+                            </span>
+                            <span className="inline-flex min-w-0 items-center gap-1.5">
+                                {t('image-host.usage.file')}
+                                <CodeValue value={`${random}/${t('image-host.usage.fileName')}`} />
+                            </span>
+                        </>
+                    )}
                 <span>{t('image-host.usage.drop')}</span>
             </div>
             {category.images.length > 0 && (
@@ -295,9 +303,9 @@ function CategoryPanel({ library, category, onSelect }: {
                                             <EyeIcon />
                                             {t('image-host.image.view')}
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => void copy(`${random}/${image.file}`)}>
+                                        <DropdownMenuItem disabled={random === undefined} onClick={() => void copy(`${random}/${image.file}`)}>
                                             <CopyIcon />
-                                            {t('image-host.image.copyCommand')}
+                                            {t('image-host.image.copyUrl')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setMoving(image)}>
                                             <FolderInputIcon />
@@ -326,7 +334,7 @@ function CategoryPanel({ library, category, onSelect }: {
                 <PreviewDialog
                     src={imageUrl(library, category.name, previewing)}
                     image={previewing}
-                    command={`${random}/${previewing.file}`}
+                    address={random && `${random}/${previewing.file}`}
                     onClose={() => setPreviewing(undefined)}
                 />
             )}
