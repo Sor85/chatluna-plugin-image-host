@@ -1,0 +1,84 @@
+image-host.title: Image Host
+image-host.description: Upload and categorize images. The bot sends them with <img> following the injected prompt; in chat, "prefix + category" sends a random image and "prefix + category/file" sends a specific one.
+image-host.loadFailed: Failed to load the library
+image-host.cancel: Cancel
+image-host.save: Save
+image-host.copied: "Copied: {text}"
+image-host.tab.images: Images
+image-host.tab.prompt: Prompt
+image-host.empty.title: No categories
+image-host.empty.hint: Images can be uploaded after a category is created.
+image-host.rescan.action: Rescan
+image-host.rescan.done: Library reloaded from disk
+image-host.rescan.failed: Rescan failed
+image-host.dedupe.all: Deduplicate all
+image-host.dedupe.action: Deduplicate category
+image-host.dedupe.none: No duplicate images found
+image-host.dedupe.done: Removed {count} duplicate images
+image-host.dedupe.failed: Deduplication failed
+image-host.name.invalid: 'Names are 1–64 characters, without whitespace or / \ : * ? " < > | & '', and do not start with . or -'
+image-host.category.list: Categories
+image-host.category.create: New category
+image-host.category.createTitle: New category
+image-host.category.editTitle: Edit category
+image-host.category.edit: Edit category
+image-host.category.delete: Delete category
+image-host.category.actions: Actions for category "{name}"
+image-host.category.name: Name
+image-host.category.namePlaceholder: cats
+image-host.category.nameHint: The name doubles as a chat command, such as "/cats".
+image-host.category.descriptionLabel: Description
+image-host.category.descriptionPlaceholder: Cat reaction images for cute or playful topics
+image-host.category.descriptionHint: The description goes into the prompt and tells the bot when this category fits.
+image-host.category.noDescription: No description
+image-host.category.taken: Category already exists
+image-host.category.count: "{count} images"
+image-host.category.exposed: Visible to bot
+image-host.category.hidden: Hidden from bot
+image-host.category.createFailed: Failed to create category
+image-host.category.updateFailed: Failed to update category
+image-host.category.deleted: Category "{name}" deleted
+image-host.category.deleteFailed: Failed to delete category
+image-host.category.deleteTitle: Delete category "{name}"
+image-host.category.deleteBody: The category folder and its {count} images are removed from disk. This cannot be undone.
+image-host.usage.random: Random
+image-host.usage.file: Specific
+image-host.usage.fileName: file
+image-host.usage.copy: Copy command
+image-host.usage.drop: Drop or paste images to upload
+image-host.upload.action: Upload
+image-host.upload.done: Uploaded {count} images
+image-host.upload.duplicates: Skipped {count} duplicate images
+image-host.upload.failed: Upload failed
+image-host.upload.failedOne: "Failed to upload {name}"
+image-host.upload.tooLarge: Exceeds the {size} limit
+image-host.image.empty: No images in this category
+image-host.image.emptyHint: Upload, drop or paste images; images with identical content are skipped.
+image-host.image.noMatch: No matching images
+image-host.image.search: Search file names
+image-host.image.searchClear: Clear search
+image-host.image.preview: Preview {name}
+image-host.image.actions: Actions for image "{name}"
+image-host.image.view: View
+image-host.image.copyCommand: Copy send command
+image-host.image.move: Rename or move
+image-host.image.moveTitle: Rename or move image
+image-host.image.moveHint: The extension stays the same; moving fails when the target category already holds identical content.
+image-host.image.moveFailed: Failed to rename or move
+image-host.image.fileName: File name
+image-host.image.target: Category
+image-host.image.delete: Delete image
+image-host.image.deleteTitle: Delete image "{name}"
+image-host.image.deleteBody: The image file is removed from disk. This cannot be undone.
+image-host.image.deleteFailed: Failed to delete image
+image-host.prompt.template: Prompt template
+image-host.prompt.reset: Restore default
+image-host.prompt.saved: Prompt template saved
+image-host.prompt.saveFailed: Failed to save prompt template
+image-host.prompt.hint: "{dir} expands to the image root folder and {placeholder} expands to the bot-visible categories with their image counts, descriptions and file names."
+image-host.prompt.missing: The template lacks {dir} or {placeholder}, so the bot cannot see the image paths or the available categories and files.
+image-host.prompt.disabled: Prompt injection is off in the plugin settings; the bot does not learn which images the host holds.
+image-host.prompt.preview: Injected preview
+image-host.prompt.previewEmpty: No bot-visible category has images, so nothing is injected.
+image-host.prompt.previewDisabled: Prompt injection is off.
+image-host.prompt.previewHint: The preview reflects the saved template and is regenerated from the current library every turn.

@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "types": ["vite/client", "@cordisjs/unyaml/types"],
+        "rootDir": ".",
+        "noEmit": true,
+        "composite": false,
+        "incremental": false,
+        "declaration": false,
+        "declarationMap": false,
+        "emitDeclarationOnly": false
+    },
+    "include": ["client", "src"]
+}
