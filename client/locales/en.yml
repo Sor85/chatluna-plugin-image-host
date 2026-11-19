@@ -99,12 +99,12 @@ image-host.preview.next: Next image
 image-host.preview.position: "{index} / {total}"
 image-host.image.deleteFailed: Failed to delete image
 image-host.prompt.template: Prompt template
+image-host.prompt.inject: "Inject prompt"
 image-host.prompt.reset: Restore default
 image-host.prompt.saved: Prompt template saved
 image-host.prompt.saveFailed: Failed to save prompt template
 image-host.prompt.hint: "{url} expands to the image root URL (HTTP) and {placeholder} expands to the bot-visible categories with their image counts, descriptions and file names; images hidden from the bot are not counted and random-only categories list no file names."
 image-host.prompt.missing: The template lacks {url} or {placeholder}, so the bot cannot see the image URLs or the available categories and files.
-image-host.prompt.disabled: "\"Inject prompt\" is off in Settings; the bot does not learn which images the host holds."
 image-host.prompt.preview: Injected preview
 image-host.prompt.previewEmpty: No bot-visible category has images, so nothing is injected.
 image-host.prompt.previewDisabled: Prompt injection is off.
@@ -114,8 +114,6 @@ image-host.settings.reset: "Reset to defaults"
 image-host.settings.saved: "Settings saved"
 image-host.settings.saveFailed: "Failed to save settings"
 image-host.settings.range: "Whole number from {min} to {max}."
-image-host.settings.inject: "Inject prompt"
-image-host.settings.injectHint: "Inject the image host prompt into the bot, listing bot-visible categories and image URLs. The template is edited in the Prompt tab."
 image-host.settings.baseUrl: "Image server address"
 image-host.settings.baseUrlHint: "The server address chat platforms use to download images. When empty, ChatLuna's own server address is used; set it when the platform (such as a OneBot implementation) runs on another machine."
 image-host.settings.baseUrlInvalid: "The address must start with http:// or https:// and contain no whitespace, query or fragment."

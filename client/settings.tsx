@@ -1,14 +1,18 @@
 import * as React from 'react'
-import { Button, CodeValue, Input, Label, Section, SettingRow, Spinner, Switch, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
+import { Button, CodeValue, Input, Label, Section, SettingRow, Spinner, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
 import { RotateCcwIcon, SaveIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView, Settings } from '../src/types'
 import { useT } from './i18n'
 
-type Draft = { [K in keyof Settings]: Settings[K] extends number ? string : Settings[K] }
+/** 「注入提示词」在提示词标签中即时保存，不属于这里的草稿。 */
+type Fields = Omit<Settings, 'injectPrompt'>
+type Draft = { [K in keyof Fields]: Fields[K] extends number ? string : Fields[K] }
+
+const pick = ({ baseUrl, maxFileSize }: Settings): Fields => ({ baseUrl, maxFileSize })
 
 const toDraft = (settings: Settings): Draft => ({
-    ...settings,
+    baseUrl: settings.baseUrl,
     maxFileSize: String(settings.maxFileSize),
 })
 
@@ -24,7 +28,8 @@ function integer(value: string, min: number, max: number) {
 export function SettingsPanel({ library }: { library: LibraryView }) {
     const t = useT()
     const [draft, setDraft] = React.useState(() => toDraft(library.settings))
-    const savedKey = JSON.stringify(library.settings)
+    const savedKey = JSON.stringify(pick(library.settings))
+    const defaults = pick(library.defaultSettings)
     const saved = React.useRef(library.settings)
     React.useEffect(() => {
         setDraft((current) => (JSON.stringify(current) === JSON.stringify(toDraft(saved.current)) ? toDraft(library.settings) : current))
@@ -39,7 +44,7 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
     const baseUrl = draft.baseUrl.trim().replace(/\/+$/u, '')
     const urlValid = urlPattern.test(baseUrl)
     const valid = size !== undefined && urlValid
-    const next: Settings | undefined = valid ? { injectPrompt: draft.injectPrompt, baseUrl, maxFileSize: size } : undefined
+    const next: Fields | undefined = valid ? { baseUrl, maxFileSize: size } : undefined
     const changed = next === undefined || JSON.stringify(next) !== savedKey
     const canSave = !save.pending && next !== undefined && changed
     useSaveShortcut(() => next && void save(next), canSave)
@@ -54,8 +59,8 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
                     <Button
                         variant="ghost"
                         size="sm"
-                        disabled={save.pending || JSON.stringify(library.settings) === JSON.stringify(library.defaultSettings)}
-                        onClick={() => void save(library.defaultSettings)}
+                        disabled={save.pending || savedKey === JSON.stringify(defaults)}
+                        onClick={() => void save(defaults)}
                     >
                         <RotateCcwIcon />
                         {t('image-host.settings.reset')}
@@ -68,11 +73,6 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
             )}
         >
             <div className="divide-y rounded-lg border px-4">
-                <SettingRow
-                    title={<Label htmlFor="image-host-inject">{t('image-host.settings.inject')}</Label>}
-                    description={t('image-host.settings.injectHint')}
-                    control={<Switch id="image-host-inject" checked={draft.injectPrompt} onCheckedChange={(checked) => set('injectPrompt', checked)} />}
-                />
                 <SettingRow
                     title={<Label htmlFor="image-host-base-url">{t('image-host.settings.baseUrl')}</Label>}
                     description={urlValid ? t('image-host.settings.baseUrlHint') : <span className="text-destructive">{t('image-host.settings.baseUrlInvalid')}</span>}

@@ -99,12 +99,12 @@ image-host.preview.next: 下一张
 image-host.preview.position: "{index} / {total}"
 image-host.image.deleteFailed: 删除图片失败
 image-host.prompt.template: 提示词模板
+image-host.prompt.inject: "注入提示词"
 image-host.prompt.reset: 恢复默认
 image-host.prompt.saved: 提示词模板已保存
 image-host.prompt.saveFailed: 保存提示词模板失败
 image-host.prompt.hint: "{url} 会替换为图片根地址（HTTP），{placeholder} 会替换为 Bot 可见分类的清单，包括分类名、图片数量、描述和文件名；对 Bot 隐藏的图片不计入，「只能随机」的分类不列文件名。"
 image-host.prompt.missing: 模板中缺少 {url} 或 {placeholder}，Bot 将无法得知图片地址或可用的分类和文件名。
-image-host.prompt.disabled: "「设置」中的「注入提示词」已关闭，Bot 不会得知图床中有哪些图片。"
 image-host.prompt.preview: 注入预览
 image-host.prompt.previewEmpty: 当前没有 Bot 可见且含图片的分类，不注入提示词。
 image-host.prompt.previewDisabled: 提示词注入已关闭。
@@ -114,8 +114,6 @@ image-host.settings.reset: "恢复默认"
 image-host.settings.saved: "设置已保存"
 image-host.settings.saveFailed: "保存设置失败"
 image-host.settings.range: "取值范围为 {min}–{max} 的整数。"
-image-host.settings.inject: "注入提示词"
-image-host.settings.injectHint: "向 Bot 注入图床提示词，列出 Bot 可见的分类与图片地址。模板在「提示词」标签中修改。"
 image-host.settings.baseUrl: "图片访问地址"
 image-host.settings.baseUrlHint: "聊天平台下载图片时使用的服务器地址。留空时使用 ChatLuna 服务器自身的地址；聊天平台（如 OneBot 实现）与 ChatLuna 不在同一台机器上时需要填写。"
 image-host.settings.baseUrlInvalid: "地址需以 http:// 或 https:// 开头，不含空白、查询参数或锚点。"

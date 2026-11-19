@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Alert, AlertDescription, Button, Section, Spinner, Textarea, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
+import { Button, Label, Section, Spinner, Switch, Textarea, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
 import { RotateCcwIcon, SaveIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView } from '../src/types'
@@ -8,7 +8,7 @@ import { useT } from './i18n'
 /** 与 `image-host.prompt.save` 的 Schema 上限一致。 */
 const MAX_LENGTH = 8000
 
-/** 提示词模板编辑与注入预览；预览始终对应已保存的模板。 */
+/** 注入开关、提示词模板编辑与注入预览；预览始终对应已保存的模板。 */
 export function PromptEditor({ library }: { library: LibraryView }) {
     const t = useT()
     const { prompt } = library
@@ -22,6 +22,10 @@ export function PromptEditor({ library }: { library: LibraryView }) {
     const save = useAction('image-host.prompt.save', {
         onSuccess: () => toast.success(t('image-host.prompt.saved')),
         onError: (error) => toast.error(t('image-host.prompt.saveFailed'), { description: apiErrorMessage(error) }),
+    })
+    // 开关切换即时保存，不进入模板草稿。
+    const inject = useAction('image-host.settings.save', {
+        onError: (error) => toast.error(t('image-host.settings.saveFailed'), { description: apiErrorMessage(error) }),
     })
     const missing = !draft.includes('{categories}') || !draft.includes('{url}')
     const tooLong = draft.length > MAX_LENGTH
@@ -52,11 +56,6 @@ export function PromptEditor({ library }: { library: LibraryView }) {
                     </>
                 )}
             >
-                {!prompt.enabled && (
-                    <Alert>
-                        <AlertDescription>{t('image-host.prompt.disabled')}</AlertDescription>
-                    </Alert>
-                )}
                 <Textarea
                     aria-label={t('image-host.prompt.template')}
                     aria-invalid={tooLong}
@@ -73,13 +72,27 @@ export function PromptEditor({ library }: { library: LibraryView }) {
                     </span>
                 </div>
             </Section>
-            <Section title={t('image-host.prompt.preview')}>
+            <Section
+                title={t('image-host.prompt.preview')}
+                actions={(
+                    // 与左栏标题行的按钮等高，两栏内容区顶端对齐。
+                    <Label className="h-[26px] text-xs font-normal text-muted-foreground">
+                        <Switch
+                            size="sm"
+                            checked={prompt.enabled}
+                            disabled={inject.pending}
+                            onCheckedChange={(injectPrompt) => void inject({ injectPrompt })}
+                        />
+                        {t('image-host.prompt.inject')}
+                    </Label>
+                )}
+            >
                 {prompt.preview === '' ? (
-                    <p className="rounded-lg border border-dashed p-4 text-muted-foreground">
+                    <p className="flex min-h-72 items-center justify-center rounded-lg border border-dashed p-4 text-center text-muted-foreground">
                         {t(prompt.enabled ? 'image-host.prompt.previewEmpty' : 'image-host.prompt.previewDisabled')}
                     </p>
                 ) : (
-                    <pre className="m-0 rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap">
+                    <pre className="m-0 min-h-72 rounded-lg border bg-muted/40 px-2.5 py-2 font-mono text-xs leading-5 break-words whitespace-pre-wrap">
                         {prompt.preview}
                     </pre>
                 )}
