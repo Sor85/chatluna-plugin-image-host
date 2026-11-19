@@ -8,6 +8,7 @@ ChatLuna v2（Cordis 4）外部插件：WebUI 侧栏「图床」页面上传、�
 - 本目录不安装依赖、不生成锁文件，脚本直接用 `node` 运行。同步：`node scripts/sync-to-v2.mjs [v2 仓库路径]`，省略时读 `CHATLUNA_V2_ROOT`，再默认 `../../chatluna-v2-mirror`。同步只覆盖不删除，改名或删除源码文件后需手动清理副本中的旧文件。
 - 首次同步或依赖变化后在 v2 根目录 `yarn install`；构建 `yarn yakumo build image-host`；在副本中 `yarn test`、`yarn typecheck`。改动代码、配置或发布文档后必须重新同步、构建并汇报结果。
 - 新增 Tailwind 类名或改服务端代码后，完整停止宿主 launcher 与 worker、确认端口释放后再启动单一实例验证。
+- 发布在本机执行 `node scripts/publish.mjs`（`--dry-run` 只演练，账号开了两步验证时加 `--otp=<验证码>`），不经 yarn，也不在 CI 里发布：`@chatluna/*` 只在私有的 v2 仓库里，公开仓库的 Actions 拿不到。脚本要求工作区干净、提交已推送、npm 已登录、`v<版本>` tag 不存在；它同步到副本，清空 `lib`、`dist`、`tsconfig.tsbuildinfo` 后构建（同步不删旧产物，tsbuildinfo 还在时 tsc 不再生成声明），跑测试与类型检查，用 `yarn pack` 打包（会改写 `workspace:*`），解压后从目录 `npm publish`（直接发 tgz 时元数据没有 `readme`，插件市场显示无说明），最后打 `v<版本>` tag 并推送。发版只需改 `package.json` 的 `version` 并提交推送。
 - 非机械变更在 `.agents/notes/implemented/` 同步维护中英文说明。未获授权不创建分支、提交、发布或修改宿主运行配置。
 
 - `package.json` 不能声明 `koishi` 依赖：宿主据此把包识别为 Koishi 旧插件并包装上下文，`ctx.server` 会变成 Koa 风格外观，图片路由随之失效。插件不使用 Koishi 能力。

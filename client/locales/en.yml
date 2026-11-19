@@ -126,6 +126,7 @@ image-host.settings.copyPath: "Copy path"
 image-host.about.version: Version
 image-host.about.package: Package
 image-host.about.license: License
+image-host.about.repository: Repository
 image-host.about.host: Platform
 image-host.about.summary: "Upload and categorize images in the sidebar page and inject the image list into the bot; \"URL/category\" returns a random image and \"URL/category/file\" a specific one"
 image-host.settings.sections: Settings sections

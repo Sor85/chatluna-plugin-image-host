@@ -1,7 +1,7 @@
-import { ImagesIcon } from 'lucide-react'
+import { ExternalLinkIcon, ImagesIcon } from 'lucide-react'
 import { Badge } from '@chatluna/ui-kit'
 // 只取需要的字段，Vite 按具名导入裁剪 JSON，其余内容不进客户端产物。
-import { license, name, version } from '../package.json'
+import { homepage, license, name, version } from '../package.json'
 import { useT } from './i18n'
 
 /** 设置导航末尾的「关于」面板，版式与 onebot-sandbox 一致；版本号读自 package.json，发版无需改动。 */
@@ -13,6 +13,7 @@ export function AboutPanel() {
         { label: t('image-host.about.license'), value: license },
         { label: t('image-host.about.host'), value: 'ChatLuna v2' },
     ]
+    const repository = homepage.replace(/#.*$/u, '')
     return (
         <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
@@ -34,6 +35,13 @@ export function AboutPanel() {
                         <dd className={row.mono ? 'm-0 font-mono text-xs leading-5 break-all' : 'm-0'}>{row.value}</dd>
                     </div>
                 ))}
+                <dt className="text-muted-foreground">{t('image-host.about.repository')}</dt>
+                <dd className="m-0 min-w-0">
+                    <a href={repository} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1 break-all text-primary hover:underline">
+                        {repository.replace(/^https:\/\//u, '')}
+                        <ExternalLinkIcon className="size-3 shrink-0" />
+                    </a>
+                </dd>
             </dl>
         </div>
     )

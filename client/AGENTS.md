@@ -4,7 +4,7 @@
 
 - 入口用 `ctx.slots.route` 注册 `/image-host/:category?`，放在 `capabilities` 分组，图标为 Lucide 名称字符串 `images`。文案只放 `locales/zh.yml`、`locales/en.yml`，组件通过 `useT()` 读取；参数占位符用 `{name}` 形式，需要原样显示花括号时作为参数传入（如 `{placeholder}`）。
 - 组件只用 `@chatluna/ui-kit` 与 `@chatluna/ui-client/client`（`useLive`、`useAction`、`toast`），图标用 `lucide-react`，与宿主页面一致；弹窗、滚动与指针行为沿用 ui-kit，不自行覆盖。
-- 页面根容器声明 `text-sm leading-5`。分类在左栏，选中分类由路由参数决定；提示词编辑在 `?tab=prompt`，插件设置在 `?tab=settings`（插件没有宿主配置项）。「注入提示词」开关放在提示词标签「注入预览」的标题行，切换即调用 `image-host.settings.save({ injectPrompt })` 即时保存，不进设置面板的草稿，因为它与模板、预览是同一件事；设置面板的保存与「恢复默认」只涉及其余设置项。设置标签与 onebot-sandbox 的设置页同一版式：左侧分区导航（常规、存储，分隔线后是「关于」），右侧面板只显示当前分区，分区记在 `?section=`；页面随宿主整体滚动，面板不设内部滚动区。保存与「恢复默认」在「常规」面板标题栏，有未保存修改时导航项带圆点。「关于」（`about.tsx`）的版本、包名、协议从 `../package.json` 具名导入，发版不用改页面；项目没有仓库地址，不放链接。
+- 页面根容器声明 `text-sm leading-5`。分类在左栏，选中分类由路由参数决定；提示词编辑在 `?tab=prompt`，插件设置在 `?tab=settings`（插件没有宿主配置项）。「注入提示词」开关放在提示词标签「注入预览」的标题行，切换即调用 `image-host.settings.save({ injectPrompt })` 即时保存，不进设置面板的草稿，因为它与模板、预览是同一件事；设置面板的保存与「恢复默认」只涉及其余设置项。设置标签与 onebot-sandbox 的设置页同一版式：左侧分区导航（常规、存储，分隔线后是「关于」），右侧面板只显示当前分区，分区记在 `?section=`；页面随宿主整体滚动，面板不设内部滚动区。保存与「恢复默认」在「常规」面板标题栏，有未保存修改时导航项带圆点。「关于」（`about.tsx`）的版本、包名、协议和仓库链接（取 `homepage` 去掉锚点）从 `../package.json` 具名导入，发版不用改页面。
 - 上传支持选择、拖入和粘贴，客户端先按 `maxFileSize` 过滤，再按 16 MB / 20 张分批调用 `image-host.image.upload`，汇总新增、重复、失败后统一提示上传中显示按文件计数的进度条，同一时间只允许一次上传；粘贴监听只注册一次（经 ref 调用最新的 `send`），有弹窗打开时不处理粘贴。
 - 复制文本用 ui-kit 的 `useCopyText`/`CodeValue`，不直接调 `navigator.clipboard`：通过局域网 HTTP 访问时没有该 API。
 - 图片支持多选：有选中项时点击缩略图切换选中，工具栏换成批量「对 Bot 隐藏/显示」「删除」（`expose`/`delete` action 本身接受文件数组），Esc 取消选择。排序、搜索只影响页面展示，预览弹窗的上一张/下一张沿用当前排序和筛选结果。

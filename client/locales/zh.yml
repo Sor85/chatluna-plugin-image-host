@@ -126,6 +126,7 @@ image-host.settings.copyPath: "复制路径"
 image-host.about.version: 版本
 image-host.about.package: 包名
 image-host.about.license: 开源协议
+image-host.about.repository: 仓库
 image-host.about.host: 运行平台
 image-host.about.summary: 在侧栏页面上传、分类管理图片，并向 Bot 注入图片清单；「地址/分类名」随机返回一张，「地址/分类名/文件名」返回指定图片
 image-host.settings.sections: 设置分区

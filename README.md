@@ -1,5 +1,7 @@
 # chatluna-plugin-image-host
 
+[![npm](https://img.shields.io/npm/v/chatluna-plugin-image-host)](https://www.npmjs.com/package/chatluna-plugin-image-host)
+
 ChatLuna v2 图床插件。在 WebUI 侧栏「图床」页面上传并分类管理图片，插件把图片地址清单注入提示词，Bot 用 v2 内置的 `<img>` 在回复中发送。所有设置都在该页面中修改。
 
 ## 功能
@@ -34,6 +36,10 @@ ChatLuna v2 图床插件。在 WebUI 侧栏「图床」页面上传并分类管�
 图片按 `data/chatluna/image-host/images/<分类>/<文件>` 存放（相对 ChatLuna 配置文件所在目录），目录即分类；`meta.json` 保存设置、分类描述、分类与图片的可见性、提示词模板和哈希缓存。直接向目录复制图片后，在页面点击「重新扫描」即可载入。
 
 支持 PNG、JPEG、GIF、WebP、BMP，格式按文件内容识别。分类名和文件名不能包含空白和 `/ \ : * ? " < > | & '`，不能以 `.` 或 `-` 开头，最长 64 个字符。
+
+## 发布
+
+`@chatluna/*` 尚未发布到 npm，构建依赖 ChatLuna v2 仓库，所以在本机发布：修改 `package.json` 的 `version` 并提交推送后运行 `node scripts/publish.mjs`（`--dry-run` 只演练，开了两步验证时加 `--otp=<验证码>`）。脚本在 v2 副本中清空产物、构建、测试并打包，发布到 npm 后给当前提交打 `v<版本>` tag 并推送。
 
 ## 许可
 

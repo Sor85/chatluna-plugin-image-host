@@ -4,6 +4,14 @@
     "description": "图床插件：在 WebUI 侧栏上传并分类管理图片，自动注入提示词供 Bot 按 HTTP 地址发图，「地址/分类名」随机返回一张，「地址/分类名/文件名」返回指定图片",
     "type": "module",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Sor85/chatluna-plugin-image-host.git"
+    },
+    "homepage": "https://github.com/Sor85/chatluna-plugin-image-host#readme",
+    "bugs": {
+        "url": "https://github.com/Sor85/chatluna-plugin-image-host/issues"
+    },
     "keywords": [
         "chatluna-plugin",
         "chatluna",
@@ -36,6 +44,7 @@
     },
     "scripts": {
         "sync": "node scripts/sync-to-v2.mjs",
+        "release": "node scripts/publish.mjs",
         "build": "yakumo build",
         "test": "vitest run",
         "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.client.json"
