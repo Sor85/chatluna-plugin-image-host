@@ -51,7 +51,8 @@ describe('renderPrompt', () => {
 
     it('lists only visible categories that have images and expands the image directory', () => {
         const text = renderPrompt(DEFAULT_PROMPT, categories, 2, '/data/images')
-        expect(text).toContain('<img src="/data/images/分类名/文件名"/>')
+        expect(text).toContain('/data/images/分类名/文件名')
+        expect(text).not.toContain('<img')
         expect(text).toContain('- 猫猫（3 张）：可爱的猫\n  a.png、b.png 等 3 张')
         expect(text).not.toContain('隐藏')
         expect(text).not.toContain('- 空')

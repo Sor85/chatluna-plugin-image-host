@@ -68,9 +68,7 @@ export function uniqueFileName(name: string, taken: (name: string) => boolean) {
 }
 
 export const DEFAULT_PROMPT = [
-    '你可以发送图床中的图片，让回复更生动：在 <message> 中写 <img src="{dir}/分类名/文件名"/>。',
-    '只发送下面列出的图片，不要编造分类或文件名；按描述挑选合适的图片，不必每条消息都发。',
-    '可用图片：',
+    '图床图片位于 {dir}，路径为「{dir}/分类名/文件名」。只使用下面列出的图片，按分类描述挑选：',
     '{categories}',
 ].join('\n')
 
