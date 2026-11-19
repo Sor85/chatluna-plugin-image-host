@@ -1,9 +1,11 @@
 import * as React from 'react'
-import { Button, CodeValue, Input, Label, Section, SettingRow, Spinner, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
-import { RotateCcwIcon, SaveIcon } from 'lucide-react'
+import { Button, CodeValue, Input, Label, SettingRow, Spinner, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
+import { DatabaseIcon, InfoIcon, RotateCcwIcon, SaveIcon, SlidersHorizontalIcon, type LucideIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView, Settings } from '../src/types'
 import { useT } from './i18n'
+import { AboutPanel } from './about'
+import { formatSize } from './upload'
 
 /** 「注入提示词」在提示词标签中即时保存，不属于这里的草稿。 */
 type Fields = Omit<Settings, 'injectPrompt'>
@@ -24,8 +26,23 @@ function integer(value: string, min: number, max: number) {
     return number >= min && number <= max ? number : undefined
 }
 
-/** 插件设置；与提示词编辑器相同，未修改时跟随其他窗口的保存结果，已修改时不覆盖。 */
-export function SettingsPanel({ library }: { library: LibraryView }) {
+type SectionId = 'general' | 'storage' | 'about'
+
+const sections: { id: SectionId, icon: LucideIcon }[] = [
+    { id: 'general', icon: SlidersHorizontalIcon },
+    { id: 'storage', icon: DatabaseIcon },
+    { id: 'about', icon: InfoIcon },
+]
+
+/**
+ * 插件设置；与提示词编辑器相同，未修改时跟随其他窗口的保存结果，已修改时不覆盖。
+ * 当前分区由 `?section=` 决定，草稿保存在本组件，切换分区不丢失。
+ */
+export function SettingsPanel({ library, section, onSection }: {
+    library: LibraryView
+    section: string | null
+    onSection(section: SectionId): void
+}) {
     const t = useT()
     const [draft, setDraft] = React.useState(() => toDraft(library.settings))
     const savedKey = JSON.stringify(pick(library.settings))
@@ -47,32 +64,14 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
     const next: Fields | undefined = valid ? { baseUrl, maxFileSize: size } : undefined
     const changed = next === undefined || JSON.stringify(next) !== savedKey
     const canSave = !save.pending && next !== undefined && changed
+    const dirty = JSON.stringify(draft) !== JSON.stringify(toDraft(library.settings))
     useSaveShortcut(() => next && void save(next), canSave)
     const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }))
 
-    return (
-        <Section
-            title={t('image-host.settings.title')}
-            className="max-w-3xl"
-            actions={(
-                <>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={save.pending || savedKey === JSON.stringify(defaults)}
-                        onClick={() => void save(defaults)}
-                    >
-                        <RotateCcwIcon />
-                        {t('image-host.settings.reset')}
-                    </Button>
-                    <Button size="sm" disabled={!canSave} title={saveShortcutLabel} aria-keyshortcuts={saveShortcutLabel === '⌘S' ? 'Meta+S' : 'Control+S'} onClick={() => next && void save(next)}>
-                        {save.pending ? <Spinner /> : <SaveIcon />}
-                        {t('image-host.save')}
-                    </Button>
-                </>
-            )}
-        >
-            <div className="divide-y rounded-lg border px-4">
+    const active = sections.find((item) => item.id === section) ?? sections[0]!
+    const rowsFor: Record<SectionId, React.ReactNode> = {
+        general: (
+            <>
                 <SettingRow
                     title={<Label htmlFor="image-host-base-url">{t('image-host.settings.baseUrl')}</Label>}
                     description={urlValid ? t('image-host.settings.baseUrlHint') : <span className="text-destructive">{t('image-host.settings.baseUrlInvalid')}</span>}
@@ -117,13 +116,74 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
                         />
                     )}
                 />
-                <SettingRow
-                    title={t('image-host.settings.dataDir')}
-                    description={t('image-host.settings.dataDirHint')}
-                >
+            </>
+        ),
+        storage: (
+            <>
+                <SettingRow title={t('image-host.settings.dataDir')} description={t('image-host.settings.dataDirHint')}>
                     <CodeValue value={library.imageDir} copy={t('image-host.settings.copyPath')} />
                 </SettingRow>
-            </div>
-        </Section>
+                <SettingRow
+                    title={t('image-host.settings.library')}
+                    description={t('image-host.settings.libraryStats', {
+                        categories: library.categories.length,
+                        images: library.categories.reduce((sum, category) => sum + category.images.length, 0),
+                        size: formatSize(library.categories.reduce((sum, category) => sum + category.images.reduce((total, image) => total + image.size, 0), 0)),
+                    })}
+                />
+            </>
+        ),
+        about: <AboutPanel />,
+    }
+    const navButton = (item: typeof sections[number]) => (
+        <Button
+            key={item.id}
+            variant="ghost"
+            className={cn('shrink-0 justify-start md:w-full', item === active && 'bg-accent text-accent-foreground')}
+            aria-current={item === active ? 'page' : undefined}
+            onClick={() => onSection(item.id)}
+        >
+            <item.icon />
+            <span>{t(`image-host.settings.section.${item.id}`)}</span>
+            {item.id === 'general' && dirty && <span role="img" aria-label={t('image-host.settings.unsaved')} className="ml-auto size-1.5 shrink-0 rounded-full bg-primary" />}
+        </Button>
+    )
+
+    // 版式与 onebot-sandbox 的设置页一致：左侧分区导航，右侧面板只显示当前分区，导航末尾隔开「关于」。
+    // 页面随宿主整体滚动，面板不设内部滚动区。
+    return (
+        <div className="grid w-full max-w-5xl items-start gap-4 md:grid-cols-[14rem_minmax(0,1fr)]">
+            <nav aria-label={t('image-host.settings.sections')} className="flex flex-wrap gap-0.5 rounded-xl p-1.5 ring-1 ring-border md:sticky md:top-(--page-header-height) md:flex-col">
+                {sections.filter((item) => item.id !== 'about').map(navButton)}
+                <div role="separator" className="mx-1 shrink-0 bg-border max-md:w-px md:my-1 md:h-px" />
+                {navButton(sections.find((item) => item.id === 'about')!)}
+            </nav>
+            <section aria-label={t(`image-host.settings.section.${active.id}`)} className="min-w-0 overflow-hidden rounded-xl ring-1 ring-border">
+                <header className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <h2 className="text-[13px] font-medium">{t(`image-host.settings.section.${active.id}`)}</h2>
+                        <p className="text-[11px] text-muted-foreground">{t(`image-host.settings.section.${active.id}Hint`)}</p>
+                    </div>
+                    {active.id === 'general' && (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={save.pending || savedKey === JSON.stringify(defaults)}
+                                onClick={() => void save(defaults)}
+                            >
+                                <RotateCcwIcon />
+                                {t('image-host.settings.reset')}
+                            </Button>
+                            <Button size="sm" disabled={!canSave} title={saveShortcutLabel} aria-keyshortcuts={saveShortcutLabel === '⌘S' ? 'Meta+S' : 'Control+S'} onClick={() => next && void save(next)}>
+                                {save.pending ? <Spinner /> : <SaveIcon />}
+                                {t('image-host.save')}
+                            </Button>
+                        </div>
+                    )}
+                </header>
+                <div className="px-5 py-1">{active.id === 'about' ? <div className="py-4">{rowsFor.about}</div> : rowsFor[active.id]}</div>
+            </section>
+        </div>
     )
 }

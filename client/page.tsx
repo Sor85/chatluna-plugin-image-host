@@ -71,7 +71,13 @@ export function ImageHostPage() {
                 : tab === 'prompt'
                     ? <PromptEditor library={library} />
                     : tab === 'settings'
-                        ? <SettingsPanel library={library} />
+                        ? (
+                            <SettingsPanel
+                                library={library}
+                                section={params.get('section')}
+                                onSection={(section) => setParams(section === 'general' ? { tab } : { tab, section })}
+                            />
+                        )
                         : <Gallery library={library} selected={category} onSelect={open} onCreate={() => setCreating(true)} />}
             <CategoryDialog
                 open={creating}

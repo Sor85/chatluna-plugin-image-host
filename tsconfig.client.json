@@ -4,6 +4,7 @@
         "types": ["vite/client", "@cordisjs/unyaml/types"],
         "rootDir": ".",
         "noEmit": true,
+        "resolveJsonModule": true,
         "composite": false,
         "incremental": false,
         "declaration": false,

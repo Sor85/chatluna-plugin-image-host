@@ -109,7 +109,6 @@ image-host.prompt.preview: Injected preview
 image-host.prompt.previewEmpty: No bot-visible category has images, so nothing is injected.
 image-host.prompt.previewDisabled: Prompt injection is off.
 image-host.prompt.previewHint: The preview reflects the saved template and is regenerated from the current library every turn.
-image-host.settings.title: "Plugin settings"
 image-host.settings.reset: "Reset to defaults"
 image-host.settings.saved: "Settings saved"
 image-host.settings.saveFailed: "Failed to save settings"
@@ -124,3 +123,18 @@ image-host.settings.maxFileSizeHint: "Largest size accepted for a single upload.
 image-host.settings.dataDir: "Image folder"
 image-host.settings.dataDirHint: "Images are stored as category/file; files copied in load after Rescan."
 image-host.settings.copyPath: "Copy path"
+image-host.about.version: Version
+image-host.about.package: Package
+image-host.about.license: License
+image-host.about.host: Platform
+image-host.about.summary: "Upload and categorize images in the sidebar page and inject the image list into the bot; \"URL/category\" returns a random image and \"URL/category/file\" a specific one"
+image-host.settings.sections: Settings sections
+image-host.settings.unsaved: Unsaved changes
+image-host.settings.section.general: General
+image-host.settings.section.generalHint: Image URL and upload limit; changes apply on save
+image-host.settings.section.storage: Storage
+image-host.settings.section.storageHint: Where images live on disk and a library overview
+image-host.settings.section.about: About
+image-host.settings.section.aboutHint: Plugin version and basic information
+image-host.settings.library: Library
+image-host.settings.libraryStats: "{categories} categories, {images} images, {size} in total"

@@ -109,7 +109,6 @@ image-host.prompt.preview: 注入预览
 image-host.prompt.previewEmpty: 当前没有 Bot 可见且含图片的分类，不注入提示词。
 image-host.prompt.previewDisabled: 提示词注入已关闭。
 image-host.prompt.previewHint: 预览对应已保存的模板，每轮对话按最新图库重新生成。
-image-host.settings.title: "插件设置"
 image-host.settings.reset: "恢复默认"
 image-host.settings.saved: "设置已保存"
 image-host.settings.saveFailed: "保存设置失败"
@@ -124,3 +123,18 @@ image-host.settings.maxFileSizeHint: "上传单张图片的最大体积。"
 image-host.settings.dataDir: "图片目录"
 image-host.settings.dataDirHint: "图片按「分类/文件」存放；直接放入文件后点击「重新扫描」即可载入。"
 image-host.settings.copyPath: "复制路径"
+image-host.about.version: 版本
+image-host.about.package: 包名
+image-host.about.license: 开源协议
+image-host.about.host: 运行平台
+image-host.about.summary: 在侧栏页面上传、分类管理图片，并向 Bot 注入图片清单；「地址/分类名」随机返回一张，「地址/分类名/文件名」返回指定图片
+image-host.settings.sections: 设置分区
+image-host.settings.unsaved: 有未保存的修改
+image-host.settings.section.general: 常规
+image-host.settings.section.generalHint: 图片访问地址与上传限制，保存后立即生效
+image-host.settings.section.storage: 存储
+image-host.settings.section.storageHint: 图片在磁盘上的位置与图库概况
+image-host.settings.section.about: 关于
+image-host.settings.section.aboutHint: 插件版本与基本信息
+image-host.settings.library: 图库
+image-host.settings.libraryStats: "{categories} 个分类，{images} 张图片，共 {size}"
