@@ -8,6 +8,9 @@ import { DEFAULT_PROMPT, DEFAULT_SETTINGS, invalidName, mimeOfName, normalizeFil
 interface CategoryMeta {
     description?: string
     exposed?: boolean
+    randomOnly?: boolean
+    /** 对 Bot 隐藏的文件名。 */
+    hidden?: string[]
 }
 
 interface Meta {
@@ -23,6 +26,7 @@ interface Category {
     name: string
     description: string
     exposed: boolean
+    randomOnly: boolean
     images: Map<string, ImageEntry>
 }
 
@@ -48,7 +52,7 @@ function shuffle<T>(items: T[]) {
 }
 
 /**
- * 图库以磁盘为准：`images/<分类>/<文件>`，分类即目录。`meta.json` 只存分类描述、设置、提示词模板和哈希缓存。
+ * 图库以磁盘为准：`images/<分类>/<文件>`，分类即目录。`meta.json` 只存设置、分类描述与可见性、隐藏图片、提示词模板和哈希缓存。
  * 所有修改串行执行，结束后写回元数据并通知订阅方。
  */
 export class ImageLibrary {
@@ -68,8 +72,10 @@ export class ImageLibrary {
         return this.meta.prompt ?? DEFAULT_PROMPT
     }
 
+    /** 只取当前版本的设置项，旧版本留下的已删除项忽略，下次保存时清除。 */
     get settings(): Settings {
-        return { ...DEFAULT_SETTINGS, ...this.meta.settings }
+        const keys = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]
+        return Object.fromEntries(keys.map((key) => [key, this.meta.settings?.[key] ?? DEFAULT_SETTINGS[key]])) as unknown as Settings
     }
 
     view(): CategoryView[] {
@@ -79,6 +85,7 @@ export class ImageLibrary {
                 name: category.name,
                 description: category.description,
                 exposed: category.exposed,
+                randomOnly: category.randomOnly,
                 images: [...category.images.values()]
                     .sort((a, b) => a.mtime - b.mtime || a.file.localeCompare(b.file, 'zh-CN', { numeric: true })),
             }))
@@ -106,12 +113,14 @@ export class ImageLibrary {
         return matches.length === 1 ? matches[0] : undefined
     }
 
-    /** 洗牌轮转取图：一轮内每张只出现一次，换轮时避免与上一张相同。 */
+    /** 洗牌轮转取图：只在 Bot 可见的图片中取，一轮内每张只出现一次，换轮时避免与上一张相同。 */
     pick(category: Category) {
-        if (category.images.size === 0) return
-        let bag = (this.bags.get(category.name) ?? []).filter((file) => category.images.has(file))
+        const visible = (file: string) => category.images.get(file)?.exposed === true
+        const files = [...category.images.keys()].filter(visible)
+        if (files.length === 0) return
+        let bag = (this.bags.get(category.name) ?? []).filter(visible)
         if (bag.length === 0) {
-            bag = shuffle([...category.images.keys()])
+            bag = shuffle(files)
             if (bag.length > 1 && bag.at(-1) === this.last.get(category.name)) {
                 ;[bag[0], bag[bag.length - 1]] = [bag[bag.length - 1]!, bag[0]!]
             }
@@ -143,11 +152,11 @@ export class ImageLibrary {
             if (this.find(name)) throw conflict(`分类已存在：${name}`)
             await mkdir(join(this.imageDir, name), { recursive: true })
             this.meta.categories[name] = { description }
-            this.categories.set(name, { name, description, exposed: true, images: new Map() })
+            this.categories.set(name, { name, description, exposed: true, randomOnly: false, images: new Map() })
         })
     }
 
-    updateCategory(name: string, patch: { rename?: string, description?: string, exposed?: boolean }) {
+    updateCategory(name: string, patch: { rename?: string, description?: string, exposed?: boolean, randomOnly?: boolean }) {
         return this.run(async () => {
             const category = this.require(name)
             if (patch.rename !== undefined && patch.rename !== category.name) {
@@ -162,6 +171,7 @@ export class ImageLibrary {
             }
             category.description = patch.description ?? category.description
             category.exposed = patch.exposed ?? category.exposed
+            category.randomOnly = patch.randomOnly ?? category.randomOnly
         })
     }
 
@@ -205,7 +215,7 @@ export class ImageLibrary {
                     [...category.images.keys()].some((taken) => taken.toLowerCase() === candidate.toLowerCase()))
                 await writeFile(join(this.imageDir, category.name, file), data)
                 const info = await stat(join(this.imageDir, category.name, file))
-                category.images.set(file, { file, size: data.length, mime, hash, mtime: info.mtimeMs })
+                category.images.set(file, { file, size: data.length, mime, hash, mtime: info.mtimeMs, exposed: true })
                 hashes.set(hash, file)
                 result.added.push(file)
             }
@@ -236,6 +246,15 @@ export class ImageLibrary {
             to.images.set(next, { ...image, file: next })
             this.bags.delete(from.name)
             this.bags.delete(to.name)
+        })
+    }
+
+    /** 设置图片对 Bot 是否可见；重新显示的图片在下一轮随机中加入。 */
+    setImagesExposed(name: string, files: readonly string[], exposed: boolean) {
+        return this.run(async () => {
+            const category = this.require(name)
+            for (const file of files) this.requireImage(category, file).exposed = exposed
+            if (exposed) this.bags.delete(category.name)
         })
     }
 
@@ -330,10 +349,15 @@ export class ImageLibrary {
     }
 
     private async writeMeta() {
-        this.meta.categories = Object.fromEntries([...this.categories.values()].map((category) => [
-            category.name,
-            { description: category.description || undefined, exposed: category.exposed ? undefined : false },
-        ]))
+        this.meta.categories = Object.fromEntries([...this.categories.values()].map((category) => {
+            const hidden = [...category.images.values()].filter((image) => !image.exposed).map((image) => image.file)
+            return [category.name, {
+                description: category.description || undefined,
+                exposed: category.exposed ? undefined : false,
+                randomOnly: category.randomOnly || undefined,
+                hidden: hidden.length ? hidden : undefined,
+            }]
+        }))
         this.meta.hashes = Object.fromEntries([...this.categories.values()].flatMap((category) =>
             [...category.images.values()].map((image) => [`${category.name}/${image.file}`, { hash: image.hash, size: image.size, mtime: image.mtime }])))
         const file = join(this.root, 'meta.json')
@@ -352,8 +376,10 @@ export class ImageLibrary {
                 name: entry.name,
                 description: meta.description ?? '',
                 exposed: meta.exposed ?? true,
+                randomOnly: meta.randomOnly ?? false,
                 images: new Map(),
             }
+            const hidden = new Set(meta.hidden)
             for (const item of await readdir(join(this.imageDir, entry.name), { withFileTypes: true })) {
                 const mime = mimeOfName(item.name)
                 if (!item.isFile() || !mime || invalidName(item.name, '文件名')) continue
@@ -363,7 +389,7 @@ export class ImageLibrary {
                 const hash = cached && cached.size === info.size && cached.mtime === info.mtimeMs
                     ? cached.hash
                     : hashOf(await readFile(path))
-                category.images.set(item.name, { file: item.name, size: info.size, mime, hash, mtime: info.mtimeMs })
+                category.images.set(item.name, { file: item.name, size: info.size, mime, hash, mtime: info.mtimeMs, exposed: !hidden.has(item.name) })
             }
             categories.set(category.name, category)
         }

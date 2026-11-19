@@ -17,9 +17,8 @@ export function registerPrompt(ctx: Context, library: ImageLibrary, imageUrl: ()
             id: 'image-host',
             zone: 'context',
             content: () => {
-                const { injectPrompt, promptFileLimit } = library.settings
                 const url = imageUrl()
-                return injectPrompt && url ? renderPrompt(library.prompt, library.view(), promptFileLimit, url) : ''
+                return library.settings.injectPrompt && url ? renderPrompt(library.prompt, library.view(), url) : ''
             },
         }))
     }

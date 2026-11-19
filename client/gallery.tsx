@@ -25,9 +25,11 @@ import {
     MoreHorizontalIcon,
     PencilIcon,
     PlusIcon,
+    ShuffleIcon,
     SparklesIcon,
     Trash2Icon,
     UploadIcon,
+    ZoomInIcon,
 } from 'lucide-react'
 import { apiBase, apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { CategoryView, ImageEntry, LibraryView, UploadResult } from '../src/types'
@@ -73,6 +75,7 @@ export function Gallery({ library, selected, onSelect, onCreate }: {
                         onClick={() => onSelect(category.name)}
                     >
                         <span className="min-w-0 flex-1 truncate text-left">{category.name}</span>
+                        {category.randomOnly && <ShuffleIcon className="text-muted-foreground" aria-label={t('image-host.category.randomOnly')} />}
                         {!category.exposed && <EyeOffIcon className="text-muted-foreground" aria-label={t('image-host.category.hidden')} />}
                         <span className="text-xs text-muted-foreground tabular-nums">{category.images.length}</span>
                     </Button>
@@ -116,6 +119,9 @@ function CategoryPanel({ library, category, onSelect }: {
     const dedupe = useAction('image-host.dedupe', {
         onSuccess: (result) => reportDedupe(t, result),
         onError: (error) => toast.error(t('image-host.dedupe.failed'), { description: apiErrorMessage(error) }),
+    })
+    const expose = useAction('image-host.image.expose', {
+        onError: (error) => toast.error(t('image-host.image.exposeFailed'), { description: apiErrorMessage(error) }),
     })
     const deleteImage = useAction('image-host.image.delete', {
         onSuccess: () => setDeleting(undefined),
@@ -161,8 +167,10 @@ function CategoryPanel({ library, category, onSelect }: {
         toast.success(t('image-host.copied', { text }))
     }
     const images = category.images.filter((image) => matchesQuery(search, image.file))
-    // 隐藏分类不提供公开地址。
+    // 隐藏分类不提供公开地址；「只能随机」的分类和隐藏图片没有指定地址。
     const random = category.exposed && library.imageUrl ? `${library.imageUrl}/${category.name}` : undefined
+    const address = (image: ImageEntry) => (random && !category.randomOnly && image.exposed ? `${random}/${image.file}` : undefined)
+    const hiddenCount = category.images.filter((image) => !image.exposed).length
 
     return (
         <section
@@ -187,6 +195,7 @@ function CategoryPanel({ library, category, onSelect }: {
                     <div className="flex items-center gap-2">
                         <h2 className="truncate text-base font-semibold">{category.name}</h2>
                         <Badge variant="secondary">{t('image-host.category.count', { count: category.images.length })}</Badge>
+                        {hiddenCount > 0 && <Badge variant="outline">{t('image-host.image.hiddenCount', { count: hiddenCount })}</Badge>}
                     </div>
                     <p className="text-muted-foreground">{category.description || t('image-host.category.noDescription')}</p>
                 </div>
@@ -199,6 +208,15 @@ function CategoryPanel({ library, category, onSelect }: {
                             onCheckedChange={(exposed) => void update({ name: category.name, exposed })}
                         />
                         {t('image-host.category.exposed')}
+                    </Label>
+                    <Label className="text-xs font-normal text-muted-foreground">
+                        <Switch
+                            size="sm"
+                            checked={category.randomOnly}
+                            disabled={update.pending}
+                            onCheckedChange={(randomOnly) => void update({ name: category.name, randomOnly })}
+                        />
+                        {t('image-host.category.randomOnly')}
                     </Label>
                     <Button size="sm" disabled={uploading} onClick={() => fileInput.current?.click()}>
                         {uploading ? <Spinner /> : <UploadIcon />}
@@ -247,10 +265,14 @@ function CategoryPanel({ library, category, onSelect }: {
                                 {t('image-host.usage.random')}
                                 <CodeValue value={random} copy={t('image-host.usage.copy')} />
                             </span>
-                            <span className="inline-flex min-w-0 items-center gap-1.5">
-                                {t('image-host.usage.file')}
-                                <CodeValue value={`${random}/${t('image-host.usage.fileName')}`} />
-                            </span>
+                            {category.randomOnly
+                                ? <span>{t('image-host.usage.randomOnly')}</span>
+                                : (
+                                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                                        {t('image-host.usage.file')}
+                                        <CodeValue value={`${random}/${t('image-host.usage.fileName')}`} />
+                                    </span>
+                                )}
                         </>
                     )}
                 <span>{t('image-host.usage.drop')}</span>
@@ -286,12 +308,15 @@ function CategoryPanel({ library, category, onSelect }: {
                                     alt={image.file}
                                     loading="lazy"
                                     draggable={false}
-                                    className="aspect-square w-full bg-muted/40 object-contain"
+                                    className={cn('aspect-square w-full bg-muted/40 object-contain transition-opacity', !image.exposed && 'opacity-40')}
                                 />
                             </Button>
                             <figcaption className="flex items-center gap-1 border-t py-1.5 pr-1 pl-2.5">
                                 <div className="min-w-0 flex-1">
-                                    <div className="truncate text-xs font-medium" title={image.file}>{image.file}</div>
+                                    <div className="flex items-center gap-1 text-xs font-medium">
+                                        {!image.exposed && <EyeOffIcon className="size-3 shrink-0 text-muted-foreground" aria-label={t('image-host.image.hidden')} />}
+                                        <span className="truncate" title={image.file}>{image.file}</span>
+                                    </div>
                                     <div className="text-[11px] leading-4 text-muted-foreground tabular-nums">{formatSize(image.size)}</div>
                                 </div>
                                 <DropdownMenu>
@@ -300,12 +325,16 @@ function CategoryPanel({ library, category, onSelect }: {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-44">
                                         <DropdownMenuItem onClick={() => setPreviewing(image)}>
-                                            <EyeIcon />
+                                            <ZoomInIcon />
                                             {t('image-host.image.view')}
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem disabled={random === undefined} onClick={() => void copy(`${random}/${image.file}`)}>
+                                        <DropdownMenuItem disabled={address(image) === undefined} onClick={() => void copy(address(image)!)}>
                                             <CopyIcon />
                                             {t('image-host.image.copyUrl')}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem disabled={expose.pending} onClick={() => void expose({ category: category.name, files: [image.file], exposed: !image.exposed })}>
+                                            {image.exposed ? <EyeOffIcon /> : <EyeIcon />}
+                                            {t(image.exposed ? 'image-host.image.hide' : 'image-host.image.show')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setMoving(image)}>
                                             <FolderInputIcon />
@@ -334,7 +363,7 @@ function CategoryPanel({ library, category, onSelect }: {
                 <PreviewDialog
                     src={imageUrl(library, category.name, previewing)}
                     image={previewing}
-                    address={random && `${random}/${previewing.file}`}
+                    address={address(previewing)}
                     onClose={() => setPreviewing(undefined)}
                 />
             )}

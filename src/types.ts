@@ -7,6 +7,8 @@ export interface ImageEntry {
     /** 文件内容的 SHA-256，同一分类内唯一，用于去重和缩略图缓存键。 */
     hash: string
     mtime: number
+    /** 关闭后该图片不写进提示词、不参与随机，指定地址返回 404。 */
+    exposed: boolean
 }
 
 export interface CategoryView {
@@ -14,14 +16,14 @@ export interface CategoryView {
     description: string
     /** 关闭后该分类不写进提示词，公开图片地址返回 404，只在页面中管理。 */
     exposed: boolean
+    /** 开启后提示词只列分类不列文件名，只能用随机地址，指定图片地址返回 404。 */
+    randomOnly: boolean
     images: ImageEntry[]
 }
 
 /** 插件设置，在侧栏页面修改，保存在 `meta.json`。 */
 export interface Settings {
     injectPrompt: boolean
-    /** 每个分类在提示词中最多列出的文件数，0 时只列分类。 */
-    promptFileLimit: number
     /** 聊天平台下载图片使用的服务器地址；空字符串时使用 ChatLuna 服务器自身地址。 */
     baseUrl: string
     /** 单张上传上限，单位 MB。 */

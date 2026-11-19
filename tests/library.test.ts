@@ -63,14 +63,58 @@ describe('categories', () => {
 describe('settings', () => {
     it('stores only values that differ from the defaults and normalizes the address', async () => {
         expect(library.settings).toEqual(DEFAULT_SETTINGS)
-        await library.setSettings({ promptFileLimit: 5, baseUrl: ' http://192.168.1.2:5028/ ' })
+        await library.setSettings({ maxFileSize: 5, baseUrl: ' http://192.168.1.2:5028/ ' })
         await library.setSettings({ injectPrompt: DEFAULT_SETTINGS.injectPrompt })
-        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toEqual({ promptFileLimit: 5, baseUrl: 'http://192.168.1.2:5028' })
+        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toEqual({ maxFileSize: 5, baseUrl: 'http://192.168.1.2:5028' })
         const reloaded = new ImageLibrary(root, () => {})
         await reloaded.load()
-        expect(reloaded.settings).toEqual({ ...DEFAULT_SETTINGS, promptFileLimit: 5, baseUrl: 'http://192.168.1.2:5028' })
+        expect(reloaded.settings).toEqual({ ...DEFAULT_SETTINGS, maxFileSize: 5, baseUrl: 'http://192.168.1.2:5028' })
         await reloaded.setSettings(DEFAULT_SETTINGS)
         expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toBeUndefined()
+    })
+
+    it('ignores settings removed in newer versions', async () => {
+        const meta = JSON.parse(await readFile(join(root, 'meta.json'), 'utf8'))
+        await writeFile(join(root, 'meta.json'), JSON.stringify({ ...meta, settings: { promptFileLimit: 5, maxFileSize: 3 } }))
+        const reloaded = new ImageLibrary(root, () => {})
+        await reloaded.load()
+        expect(reloaded.settings).toEqual({ ...DEFAULT_SETTINGS, maxFileSize: 3 })
+        await reloaded.setSettings({})
+        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).settings).toEqual({ maxFileSize: 3 })
+    })
+})
+
+describe('visibility', () => {
+    beforeEach(async () => {
+        await library.createCategory('猫猫')
+        await library.upload('猫猫', [1, 2, 3].map((n) => upload(`${n}.png`, png(n))), MB)
+    })
+
+    it('persists random-only categories and hidden images across renames and moves', async () => {
+        await library.updateCategory('猫猫', { randomOnly: true })
+        await library.setImagesExposed('猫猫', ['2.png'], false)
+        await library.moveImage('猫猫', '2.png', { file: 'two.png' })
+        await library.updateCategory('猫猫', { rename: 'cats' })
+        const reloaded = new ImageLibrary(root, () => {})
+        await reloaded.load()
+        const [category] = reloaded.view()
+        expect(category).toMatchObject({ name: 'cats', randomOnly: true })
+        expect(Object.fromEntries(category!.images.map((image) => [image.file, image.exposed]))).toEqual({ '1.png': true, 'two.png': false, '3.png': true })
+        await reloaded.setImagesExposed('cats', ['two.png'], true)
+        await reloaded.updateCategory('cats', { randomOnly: false })
+        expect(JSON.parse(await readFile(join(root, 'meta.json'), 'utf8')).categories).toEqual({ cats: {} })
+        await expect(reloaded.setImagesExposed('cats', ['missing.png'], false)).rejects.toThrow('图片不存在')
+    })
+
+    it('never picks hidden images and picks them again once shown', async () => {
+        const category = library.find('猫猫')!
+        library.pick(category)
+        await library.setImagesExposed('猫猫', ['1.png', '2.png'], false)
+        expect(new Set(Array.from({ length: 6 }, () => library.pick(category)!.file))).toEqual(new Set(['3.png']))
+        await library.setImagesExposed('猫猫', ['3.png'], false)
+        expect(library.pick(category)).toBeUndefined()
+        await library.setImagesExposed('猫猫', ['1.png'], true)
+        expect(library.pick(category)!.file).toBe('1.png')
     })
 })
 

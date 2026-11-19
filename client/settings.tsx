@@ -9,7 +9,6 @@ type Draft = { [K in keyof Settings]: Settings[K] extends number ? string : Sett
 
 const toDraft = (settings: Settings): Draft => ({
     ...settings,
-    promptFileLimit: String(settings.promptFileLimit),
     maxFileSize: String(settings.maxFileSize),
 })
 
@@ -36,12 +35,11 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
         onError: (error) => toast.error(t('image-host.settings.saveFailed'), { description: apiErrorMessage(error) }),
     })
 
-    const limit = integer(draft.promptFileLimit, 0, 500)
     const size = integer(draft.maxFileSize, 1, 50)
     const baseUrl = draft.baseUrl.trim().replace(/\/+$/u, '')
     const urlValid = urlPattern.test(baseUrl)
-    const valid = limit !== undefined && size !== undefined && urlValid
-    const next: Settings | undefined = valid ? { injectPrompt: draft.injectPrompt, promptFileLimit: limit, baseUrl, maxFileSize: size } : undefined
+    const valid = size !== undefined && urlValid
+    const next: Settings | undefined = valid ? { injectPrompt: draft.injectPrompt, baseUrl, maxFileSize: size } : undefined
     const changed = next === undefined || JSON.stringify(next) !== savedKey
     const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }))
 
@@ -72,23 +70,6 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
                     title={<Label htmlFor="image-host-inject">{t('image-host.settings.inject')}</Label>}
                     description={t('image-host.settings.injectHint')}
                     control={<Switch id="image-host-inject" checked={draft.injectPrompt} onCheckedChange={(checked) => set('injectPrompt', checked)} />}
-                />
-                <SettingRow
-                    title={<Label htmlFor="image-host-limit">{t('image-host.settings.limit')}</Label>}
-                    description={limit === undefined ? <span className="text-destructive">{t('image-host.settings.range', { min: 0, max: 500 })}</span> : t('image-host.settings.limitHint')}
-                    control={(
-                        <Input
-                            id="image-host-limit"
-                            type="number"
-                            inputMode="numeric"
-                            min={0}
-                            max={500}
-                            className="w-28"
-                            aria-invalid={limit === undefined}
-                            value={draft.promptFileLimit}
-                            onChange={(event) => set('promptFileLimit', event.target.value)}
-                        />
-                    )}
                 />
                 <SettingRow
                     title={<Label htmlFor="image-host-base-url">{t('image-host.settings.baseUrl')}</Label>}

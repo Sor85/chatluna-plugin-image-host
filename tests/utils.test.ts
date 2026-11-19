@@ -42,21 +42,23 @@ describe('sniffImage', () => {
 })
 
 describe('renderPrompt', () => {
-    const image = (file: string) => ({ file, size: 1, mime: 'image/png', hash: file, mtime: 0 })
+    const image = (file: string, exposed = true) => ({ file, size: 1, mime: 'image/png', hash: file, mtime: 0, exposed })
     const categories: CategoryView[] = [
-        { name: '猫猫', description: '可爱的猫', exposed: true, images: [image('a.png'), image('b.png'), image('c.png')] },
-        { name: '隐藏', description: '', exposed: false, images: [image('x.png')] },
-        { name: '空', description: '', exposed: true, images: [] },
+        { name: '猫猫', description: '可爱的猫', exposed: true, randomOnly: false, images: [image('a.png'), image('b.png'), image('c.png', false)] },
+        { name: '狗狗', description: '', exposed: true, randomOnly: true, images: [image('d.png'), image('e.png')] },
+        { name: '隐藏', description: '', exposed: false, randomOnly: false, images: [image('x.png')] },
+        { name: '空', description: '', exposed: true, randomOnly: false, images: [] },
+        { name: '全隐藏', description: '', exposed: true, randomOnly: false, images: [image('y.png', false)] },
     ]
 
-    it('lists only visible categories that have images and expands the image URL', () => {
-        const text = renderPrompt(DEFAULT_PROMPT, categories, 2, 'http://127.0.0.1:5028/image-host/raw')
+    it('lists only visible categories and images and expands the image URL', () => {
+        const text = renderPrompt(DEFAULT_PROMPT, categories, 'http://127.0.0.1:5028/image-host/raw')
         expect(text).toContain('http://127.0.0.1:5028/image-host/raw/分类名/文件名')
         expect(text).toContain('「http://127.0.0.1:5028/image-host/raw/分类名」随机')
         expect(text).not.toContain('<img')
-        expect(text).toContain('- 猫猫（3 张）：可爱的猫\n  a.png、b.png 等 3 张')
-        expect(text).not.toContain('隐藏')
-        expect(text).not.toContain('- 空')
+        expect(text).toContain('- 猫猫（2 张）：可爱的猫\n  a.png、b.png\n')
+        expect(text).not.toContain('c.png')
+        expect(text).not.toMatch(/- 隐藏|- 空|- 全隐藏/)
         expect(text).not.toMatch(/\{(url|categories)\}/)
     })
 
@@ -65,11 +67,11 @@ describe('renderPrompt', () => {
         expect(publicImageUrl('https://bot.example.com/chatluna')).toBe('https://bot.example.com/chatluna/image-host/raw')
     })
 
-    it('omits file names when the limit is zero', () => {
-        expect(renderPrompt('{categories}', categories, 0, '/d')).toBe('- 猫猫（3 张）：可爱的猫')
+    it('lists random-only categories without file names', () => {
+        expect(renderPrompt('{categories}', categories.slice(1, 2), '/d')).toBe('- 狗狗（2 张，只能随机）')
     })
 
     it('injects nothing when no category is usable', () => {
-        expect(renderPrompt(DEFAULT_PROMPT, categories.slice(1), 5, '/d')).toBe('')
+        expect(renderPrompt(DEFAULT_PROMPT, categories.slice(2), '/d')).toBe('')
     })
 })

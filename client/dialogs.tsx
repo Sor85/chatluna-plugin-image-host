@@ -211,7 +211,7 @@ export function MoveDialog({ image, category, categories, onClose }: {
 export function PreviewDialog({ src, image, address, onClose }: {
     src: string
     image: ImageEntry
-    /** 公开图片地址；隐藏分类没有。 */
+    /** 公开图片地址；隐藏分类、「只能随机」的分类和隐藏图片没有。 */
     address?: string
     onClose(): void
 }) {

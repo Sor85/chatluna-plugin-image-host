@@ -35,6 +35,7 @@ image-host.category.taken: 分类已存在
 image-host.category.count: "{count} 张"
 image-host.category.exposed: Bot 可见
 image-host.category.hidden: Bot 不可见
+image-host.category.randomOnly: 只能随机
 image-host.category.createFailed: 新建分类失败
 image-host.category.updateFailed: 更新分类失败
 image-host.category.deleted: 已删除分类「{name}」
@@ -47,6 +48,7 @@ image-host.usage.fileName: 文件名
 image-host.usage.copy: "复制地址"
 image-host.usage.drop: 支持拖入或粘贴图片上传
 image-host.usage.hidden: "分类对 Bot 不可见，图片地址返回 404。"
+image-host.usage.randomOnly: "只能随机：提示词不列出文件名，指定图片地址返回 404。"
 image-host.usage.noServer: "未加载 HTTP 服务，没有图片地址。"
 image-host.upload.action: 上传图片
 image-host.upload.done: 已上传 {count} 张图片
@@ -63,6 +65,11 @@ image-host.image.preview: 预览 {name}
 image-host.image.actions: 图片「{name}」的操作
 image-host.image.view: 查看大图
 image-host.image.copyUrl: "复制图片地址"
+image-host.image.hide: 对 Bot 隐藏
+image-host.image.show: 对 Bot 显示
+image-host.image.hidden: Bot 不可见
+image-host.image.hiddenCount: "{count} 张对 Bot 隐藏"
+image-host.image.exposeFailed: 更新图片可见性失败
 image-host.image.move: 重命名或移动
 image-host.image.moveTitle: 重命名或移动图片
 image-host.image.moveHint: 扩展名保持不变；目标分类已有相同内容的图片时无法移动。
@@ -77,7 +84,7 @@ image-host.prompt.template: 提示词模板
 image-host.prompt.reset: 恢复默认
 image-host.prompt.saved: 提示词模板已保存
 image-host.prompt.saveFailed: 保存提示词模板失败
-image-host.prompt.hint: "{url} 会替换为图片根地址（HTTP），{placeholder} 会替换为 Bot 可见分类的清单，包括分类名、图片数量、描述和文件名。"
+image-host.prompt.hint: "{url} 会替换为图片根地址（HTTP），{placeholder} 会替换为 Bot 可见分类的清单，包括分类名、图片数量、描述和文件名；对 Bot 隐藏的图片不计入，「只能随机」的分类不列文件名。"
 image-host.prompt.missing: 模板中缺少 {url} 或 {placeholder}，Bot 将无法得知图片地址或可用的分类和文件名。
 image-host.prompt.disabled: "「设置」中的「注入提示词」已关闭，Bot 不会得知图床中有哪些图片。"
 image-host.prompt.preview: 注入预览
@@ -91,8 +98,6 @@ image-host.settings.saveFailed: "保存设置失败"
 image-host.settings.range: "取值范围为 {min}–{max} 的整数。"
 image-host.settings.inject: "注入提示词"
 image-host.settings.injectHint: "向 Bot 注入图床提示词，列出 Bot 可见的分类与图片地址。模板在「提示词」标签中修改。"
-image-host.settings.limit: "提示词列出文件数"
-image-host.settings.limitHint: "每个分类在提示词中最多列出的文件名数量；为 0 时只列出分类，Bot 只能用随机地址。"
 image-host.settings.baseUrl: "图片访问地址"
 image-host.settings.baseUrlHint: "聊天平台下载图片时使用的服务器地址。留空时使用 ChatLuna 服务器自身的地址；聊天平台（如 OneBot 实现）与 ChatLuna 不在同一台机器上时需要填写。"
 image-host.settings.baseUrlInvalid: "地址需以 http:// 或 https:// 开头，不含空白、查询参数或锚点。"

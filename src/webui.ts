@@ -16,10 +16,11 @@ declare module '@chatluna/ui-client/client' {
     }
     interface Actions {
         'image-host.category.create'(input: { name: string, description?: string }): void
-        'image-host.category.update'(input: { name: string, rename?: string, description?: string, exposed?: boolean }): void
+        'image-host.category.update'(input: { name: string, rename?: string, description?: string, exposed?: boolean, randomOnly?: boolean }): void
         'image-host.category.delete'(input: { name: string }): void
         'image-host.image.upload'(input: { category: string, files: UploadFile[] }): UploadResult
         'image-host.image.move'(input: { category: string, file: string, target?: string, rename?: string }): void
+        'image-host.image.expose'(input: { category: string, files: string[], exposed: boolean }): void
         'image-host.image.delete'(input: { category: string, files: string[] }): void
         'image-host.dedupe'(input: { category?: string }): DedupeResult
         'image-host.rescan'(input: {}): void
@@ -52,7 +53,7 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
                 prompt: {
                     template: library.prompt,
                     defaultTemplate: DEFAULT_PROMPT,
-                    preview: settings.injectPrompt && url ? renderPrompt(library.prompt, categories, settings.promptFileLimit, url) : '',
+                    preview: settings.injectPrompt && url ? renderPrompt(library.prompt, categories, url) : '',
                     enabled: settings.injectPrompt,
                 },
                 settings,
@@ -69,7 +70,7 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
         input: Schema.object({ name, description: Schema.string().max(500) }),
     }, ({ name, description }) => library.createCategory(name, description))
     webui.action('image-host.category.update', {
-        input: Schema.object({ name, rename: Schema.string().max(64), description: Schema.string().max(500), exposed: Schema.boolean() }),
+        input: Schema.object({ name, rename: Schema.string().max(64), description: Schema.string().max(500), exposed: Schema.boolean(), randomOnly: Schema.boolean() }),
     }, ({ name, ...patch }) => library.updateCategory(name, patch))
     webui.action('image-host.category.delete', {
         input: Schema.object({ name }),
@@ -83,6 +84,9 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
     webui.action('image-host.image.move', {
         input: Schema.object({ category: name, file: name, target: Schema.string().max(64), rename: Schema.string().max(64) }),
     }, ({ category, file, target, rename }) => library.moveImage(category, file, { category: target, file: rename }))
+    webui.action('image-host.image.expose', {
+        input: Schema.object({ category: name, files: Schema.array(Schema.string()).min(1).required(), exposed: Schema.boolean().required() }),
+    }, ({ category, files, exposed }) => library.setImagesExposed(category, files, exposed))
     webui.action('image-host.image.delete', {
         input: Schema.object({ category: name, files: Schema.array(Schema.string()).min(1).required() }),
     }, ({ category, files }) => library.deleteImages(category, files))
@@ -96,7 +100,6 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
     webui.action('image-host.settings.save', {
         input: Schema.object({
             injectPrompt: Schema.boolean(),
-            promptFileLimit: Schema.natural().max(500),
             baseUrl: Schema.string().max(500).pattern(/^(https?:\/\/[^\s/?#]+(\/[^\s?#]*)?)?$/u),
             maxFileSize: Schema.natural().min(1).max(50),
         }),
