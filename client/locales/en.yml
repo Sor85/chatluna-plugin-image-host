@@ -75,8 +75,8 @@ image-host.prompt.template: Prompt template
 image-host.prompt.reset: Restore default
 image-host.prompt.saved: Prompt template saved
 image-host.prompt.saveFailed: Failed to save prompt template
-image-host.prompt.hint: "{dir} expands to the image root folder and {placeholder} expands to the bot-visible categories with their image counts, descriptions and file names."
-image-host.prompt.missing: The template lacks {dir} or {placeholder}, so the bot cannot see the image paths or the available categories and files.
+image-host.prompt.hint: "{url} expands to the image root URL (HTTP) and {placeholder} expands to the bot-visible categories with their image counts, descriptions and file names."
+image-host.prompt.missing: The template lacks {url} or {placeholder}, so the bot cannot see the image URLs or the available categories and files.
 image-host.prompt.disabled: Prompt injection is off in the plugin settings; the bot does not learn which images the host holds.
 image-host.prompt.preview: Injected preview
 image-host.prompt.previewEmpty: No bot-visible category has images, so nothing is injected.

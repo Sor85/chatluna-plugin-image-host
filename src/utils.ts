@@ -67,16 +67,24 @@ export function uniqueFileName(name: string, taken: (name: string) => boolean) {
     }
 }
 
+/** 供平台下载图片的公开路由，只提供 Bot 可见分类；页面预览走另一条需要登录的路由。 */
+export const PUBLIC_ROUTE = '/image-host/raw'
+
+/** 由服务器地址拼出提示词中的图片根地址。 */
+export function publicImageUrl(base: string) {
+    return base.replace(/\/+$/u, '') + PUBLIC_ROUTE
+}
+
 export const DEFAULT_PROMPT = [
-    '图床图片位于 {dir}，路径为「{dir}/分类名/文件名」。只使用下面列出的图片，按分类描述挑选：',
+    '图床图片的地址为「{url}/分类名/文件名」。只使用下面列出的图片，按分类描述挑选：',
     '{categories}',
 ].join('\n')
 
 /**
- * 按模板渲染注入的提示词：`{dir}` 替换为图片根目录，`{categories}` 替换为可见分类清单。
+ * 按模板渲染注入的提示词：`{url}` 替换为图片根地址，`{categories}` 替换为可见分类清单。
  * 没有可见图片时返回空字符串，不注入。
  */
-export function renderPrompt(template: string, categories: readonly CategoryView[], fileLimit: number, dir: string) {
+export function renderPrompt(template: string, categories: readonly CategoryView[], fileLimit: number, url: string) {
     const lines = categories
         .filter((category) => category.exposed && category.images.length > 0)
         .map((category) => {
@@ -87,5 +95,5 @@ export function renderPrompt(template: string, categories: readonly CategoryView
             return `${head}\n  ${files.join('、')}${more}`
         })
     if (lines.length === 0) return ''
-    return template.replaceAll('{dir}', dir.replaceAll('\\', '/')).replaceAll('{categories}', lines.join('\n')).trim()
+    return template.replaceAll('{url}', url).replaceAll('{categories}', lines.join('\n')).trim()
 }

@@ -6,7 +6,7 @@ import type {} from '@chatluna/ui-client/client'
 import type { Request } from '@cordisjs/plugin-server'
 import type { ImageLibrary } from './library'
 import type { DedupeResult, LibraryView, UploadFile, UploadResult } from './types'
-import { DEFAULT_PROMPT, renderPrompt } from './utils'
+import { DEFAULT_PROMPT, PUBLIC_ROUTE, renderPrompt } from './utils'
 
 export const FILE_ROUTE = '/image-host/files'
 
@@ -31,6 +31,7 @@ export interface WebOptions {
     prefix: string
     injectPrompt: boolean
     promptFileLimit: number
+    imageUrl: () => string | undefined
     maxFileSize: number
 }
 
@@ -40,15 +41,17 @@ const name = Schema.string().min(1).max(64).required()
 export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebOptions) {
     const webui = ctx.chatluna_webui
     webui.addEntry({ baseUrl: import.meta.url, source: '../client/index.ts', bundle: '../dist/client.js' })
+    webui.exclude(PUBLIC_ROUTE)
     webui.state('image-host.library', {
         get: () => {
             const categories = library.view()
+            const url = options.imageUrl()
             return {
                 categories,
                 prompt: {
                     template: library.prompt,
                     defaultTemplate: DEFAULT_PROMPT,
-                    preview: options.injectPrompt ? renderPrompt(library.prompt, categories, options.promptFileLimit, library.imageDir) : '',
+                    preview: options.injectPrompt && url ? renderPrompt(library.prompt, categories, options.promptFileLimit, url) : '',
                     enabled: options.injectPrompt,
                 },
                 prefix: options.prefix,

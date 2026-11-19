@@ -75,8 +75,8 @@ image-host.prompt.template: 提示词模板
 image-host.prompt.reset: 恢复默认
 image-host.prompt.saved: 提示词模板已保存
 image-host.prompt.saveFailed: 保存提示词模板失败
-image-host.prompt.hint: "{dir} 会替换为图片根目录，{placeholder} 会替换为 Bot 可见分类的清单，包括分类名、图片数量、描述和文件名。"
-image-host.prompt.missing: 模板中缺少 {dir} 或 {placeholder}，Bot 将无法得知图片路径或可用的分类和文件名。
+image-host.prompt.hint: "{url} 会替换为图片根地址（HTTP），{placeholder} 会替换为 Bot 可见分类的清单，包括分类名、图片数量、描述和文件名。"
+image-host.prompt.missing: 模板中缺少 {url} 或 {placeholder}，Bot 将无法得知图片地址或可用的分类和文件名。
 image-host.prompt.disabled: 插件配置中的「注入提示词」已关闭，Bot 不会得知图床中有哪些图片。
 image-host.prompt.preview: 注入预览
 image-host.prompt.previewEmpty: 当前没有 Bot 可见且含图片的分类，不注入提示词。

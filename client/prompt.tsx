@@ -20,7 +20,7 @@ export function PromptEditor({ library }: { library: LibraryView }) {
         onSuccess: () => toast.success(t('image-host.prompt.saved')),
         onError: (error) => toast.error(t('image-host.prompt.saveFailed'), { description: apiErrorMessage(error) }),
     })
-    const missing = !draft.includes('{categories}') || !draft.includes('{dir}')
+    const missing = !draft.includes('{categories}') || !draft.includes('{url}')
     return (
         <div className="grid items-start gap-6 xl:grid-cols-2">
             <Section
@@ -58,7 +58,7 @@ export function PromptEditor({ library }: { library: LibraryView }) {
                     onChange={(event) => setDraft(event.target.value)}
                 />
                 <p className={missing ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
-                    {t(missing ? 'image-host.prompt.missing' : 'image-host.prompt.hint', { placeholder: '{categories}', dir: '{dir}' })}
+                    {t(missing ? 'image-host.prompt.missing' : 'image-host.prompt.hint', { placeholder: '{categories}', url: '{url}' })}
                 </p>
             </Section>
             <Section title={t('image-host.prompt.preview')}>

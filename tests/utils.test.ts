@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROMPT, invalidName, mimeOfName, normalizeFileName, renderPrompt, sniffImage, uniqueFileName } from '../src/utils'
+import { DEFAULT_PROMPT, invalidName, mimeOfName, normalizeFileName, publicImageUrl, renderPrompt, sniffImage, uniqueFileName } from '../src/utils'
 import type { CategoryView } from '../src/types'
 import { jpeg, png } from './fixtures'
 
@@ -49,18 +49,19 @@ describe('renderPrompt', () => {
         { name: '空', description: '', exposed: true, images: [] },
     ]
 
-    it('lists only visible categories that have images and expands the image directory', () => {
-        const text = renderPrompt(DEFAULT_PROMPT, categories, 2, '/data/images')
-        expect(text).toContain('/data/images/分类名/文件名')
+    it('lists only visible categories that have images and expands the image URL', () => {
+        const text = renderPrompt(DEFAULT_PROMPT, categories, 2, 'http://127.0.0.1:5028/image-host/raw')
+        expect(text).toContain('http://127.0.0.1:5028/image-host/raw/分类名/文件名')
         expect(text).not.toContain('<img')
         expect(text).toContain('- 猫猫（3 张）：可爱的猫\n  a.png、b.png 等 3 张')
         expect(text).not.toContain('隐藏')
         expect(text).not.toContain('- 空')
-        expect(text).not.toMatch(/\{(dir|categories)\}/)
+        expect(text).not.toMatch(/\{(url|categories)\}/)
     })
 
-    it('uses forward slashes for Windows directories', () => {
-        expect(renderPrompt('{dir}', categories, 0, 'C:\\bot\\images')).toBe('C:/bot/images')
+    it('builds the public image URL from the server address', () => {
+        expect(publicImageUrl('http://192.168.1.2:5028/')).toBe('http://192.168.1.2:5028/image-host/raw')
+        expect(publicImageUrl('https://bot.example.com/chatluna')).toBe('https://bot.example.com/chatluna/image-host/raw')
     })
 
     it('omits file names when the limit is zero', () => {

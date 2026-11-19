@@ -130,9 +130,9 @@ try {
         const call_ = await call('get_model_call', { spaceId, conversationId: groupChat, botId: bot })
         const request = JSON.stringify(call_)
         assert.ok(request.includes(`${category}（${files.length} 张）`), '模型请求中缺少注入的分类清单')
-        assert.ok(request.includes(`/images/${category}/`) || request.includes(`/${category}/`), '模型请求中缺少图片路径说明')
+        assert.ok(request.includes('/image-host/raw/分类名/文件名'), '模型请求中缺少图片地址说明')
         const response = JSON.stringify(call_.response ?? call_)
-        assert.match(response, /<img src=/, '模型回复中没有使用 <img>')
+        assert.match(response, /<img src=\\?"https?:\/\/[^"\\]*\/image-host\/raw\//, '模型回复中没有使用图床的 HTTP 地址')
         record('Bot 按提示词发图', content, reply, { injected: true })
     }
 
