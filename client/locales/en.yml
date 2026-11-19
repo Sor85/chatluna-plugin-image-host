@@ -32,7 +32,7 @@ image-host.category.descriptionPlaceholder: Cat reaction images for cute or play
 image-host.category.descriptionHint: The description goes into the prompt and tells the bot when this category fits.
 image-host.category.noDescription: No description
 image-host.category.taken: Category already exists
-image-host.category.count: "{count} images"
+image-host.category.summary: "{count} images · {size}"
 image-host.category.exposed: Visible to bot
 image-host.category.hidden: Hidden from bot
 image-host.category.randomOnly: Random only
@@ -55,12 +55,21 @@ image-host.upload.done: Uploaded {count} images
 image-host.upload.duplicates: Skipped {count} duplicate images
 image-host.upload.failed: Upload failed
 image-host.upload.failedOne: "Failed to upload {name}"
+image-host.upload.busy: The previous upload is still in progress
+image-host.upload.progress: Uploading
+image-host.upload.dropHere: "Drop to upload to \"{name}\""
 image-host.upload.tooLarge: Exceeds the {size} limit
 image-host.image.empty: No images in this category
 image-host.image.emptyHint: Upload, drop or paste images; images with identical content are skipped.
 image-host.image.noMatch: No matching images
 image-host.image.search: Search file names
 image-host.image.searchClear: Clear search
+image-host.image.select: Select {name}
+image-host.image.selectAll: Select all
+image-host.image.selectNone: Deselect all
+image-host.image.selected: "{count} selected"
+image-host.image.clearSelection: Clear selection
+image-host.image.deleteSelected: Delete
 image-host.image.preview: Preview {name}
 image-host.image.actions: Actions for image "{name}"
 image-host.image.view: View
@@ -79,6 +88,15 @@ image-host.image.target: Category
 image-host.image.delete: Delete image
 image-host.image.deleteTitle: Delete image "{name}"
 image-host.image.deleteBody: The image file is removed from disk. This cannot be undone.
+image-host.image.deleteManyTitle: "Delete {count} images"
+image-host.image.deleteManyBody: The selected image files are removed from disk. This cannot be undone.
+image-host.sort.label: Sort
+image-host.sort.name: Name
+image-host.sort.newest: Newest
+image-host.sort.size: Size
+image-host.preview.prev: Previous image
+image-host.preview.next: Next image
+image-host.preview.position: "{index} / {total}"
 image-host.image.deleteFailed: Failed to delete image
 image-host.prompt.template: Prompt template
 image-host.prompt.reset: Restore default

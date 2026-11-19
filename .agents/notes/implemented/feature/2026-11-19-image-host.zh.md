@@ -15,6 +15,7 @@ Status: implemented
 - 可见性分两级，都在图片页面设置：分类「只能随机」时提示词只列分类不列文件名（标注「只能随机」），指定图片地址返回 404；单张图片「对 Bot 隐藏」时不写进提示词、不参与随机，指定地址返回 404。隐藏图片按文件名存在分类元数据的 `hidden` 中，改名、移动时随图片一起迁移。原「提示词列出文件数」设置随之删除，提示词列出全部可见文件名；旧 `meta.json` 中的该项读取时忽略、下次保存时清除。
 - 去重以 SHA-256 为准、范围是单个分类：上传跳过重复、跨分类移动拒绝重复、`dedupe()` 清理现存重复。随机地址用每分类一个洗牌袋，一轮内不重复、换轮不与上一张相同。
 - 页面（`client/`）用 `ctx.slots.route` 注册 `/image-host/:category?`；上传走 Base64 action 并由客户端分批；预览走不在 `/api` 下、校验登录 Cookie 的 `/image-host/files/:category/:file`。
+- 页面优化：图片可多选并批量对 Bot 隐藏/显示或删除（复用接受文件数组的 `expose`/`delete` action，不新增服务端接口）；上传显示进度且同一时间只允许一次；拖入时显示覆盖提示；图片可按名称、最新、大小排序，预览可用方向键切换；分类可见性开关与公开地址合并为一个访问栏；复制改用 ui-kit 的 `useCopyText`，因为通过局域网 HTTP 访问时没有 `navigator.clipboard`；提示词与设置支持 ⌘S / Ctrl+S 保存，提示词显示 8000 字符上限。
 - `package.json` 的 `peerDependencies` 不声明 `koishi`，否则宿主按 Koishi 旧插件包装上下文，`ctx.server` 变为 Koa 外观。
 
 ## Alternatives considered

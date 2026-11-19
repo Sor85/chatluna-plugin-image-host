@@ -32,7 +32,7 @@ image-host.category.descriptionPlaceholder: 各种猫咪表情，用于卖萌或
 image-host.category.descriptionHint: 描述写入提示词，帮助 Bot 判断何时发送该分类的图片。
 image-host.category.noDescription: 暂无描述
 image-host.category.taken: 分类已存在
-image-host.category.count: "{count} 张"
+image-host.category.summary: "{count} 张 · {size}"
 image-host.category.exposed: Bot 可见
 image-host.category.hidden: Bot 不可见
 image-host.category.randomOnly: 只能随机
@@ -55,12 +55,21 @@ image-host.upload.done: 已上传 {count} 张图片
 image-host.upload.duplicates: 跳过 {count} 张重复图片
 image-host.upload.failed: 上传失败
 image-host.upload.failedOne: "{name} 上传失败"
+image-host.upload.busy: 上一批图片仍在上传
+image-host.upload.progress: 正在上传
+image-host.upload.dropHere: "松开以上传到「{name}」"
 image-host.upload.tooLarge: 超过 {size} 上限
 image-host.image.empty: 该分类暂无图片
 image-host.image.emptyHint: 上传、拖入或粘贴图片；相同内容的图片自动跳过。
 image-host.image.noMatch: 没有匹配的图片
 image-host.image.search: 搜索文件名
 image-host.image.searchClear: 清除搜索
+image-host.image.select: 选择 {name}
+image-host.image.selectAll: 全选
+image-host.image.selectNone: 取消全选
+image-host.image.selected: 已选 {count} 张
+image-host.image.clearSelection: 取消选择
+image-host.image.deleteSelected: 删除
 image-host.image.preview: 预览 {name}
 image-host.image.actions: 图片「{name}」的操作
 image-host.image.view: 查看大图
@@ -79,6 +88,15 @@ image-host.image.target: 所属分类
 image-host.image.delete: 删除图片
 image-host.image.deleteTitle: 删除图片「{name}」
 image-host.image.deleteBody: 图片文件将从磁盘删除，此操作不可撤销。
+image-host.image.deleteManyTitle: 删除 {count} 张图片
+image-host.image.deleteManyBody: 所选图片文件将从磁盘删除，此操作不可撤销。
+image-host.sort.label: 排序
+image-host.sort.name: 名称
+image-host.sort.newest: 最新
+image-host.sort.size: 大小
+image-host.preview.prev: 上一张
+image-host.preview.next: 下一张
+image-host.preview.position: "{index} / {total}"
 image-host.image.deleteFailed: 删除图片失败
 image-host.prompt.template: 提示词模板
 image-host.prompt.reset: 恢复默认

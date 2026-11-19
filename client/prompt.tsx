@@ -1,9 +1,12 @@
 import * as React from 'react'
-import { Alert, AlertDescription, Button, Section, Spinner, Textarea } from '@chatluna/ui-kit'
+import { Alert, AlertDescription, Button, Section, Spinner, Textarea, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
 import { RotateCcwIcon, SaveIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView } from '../src/types'
 import { useT } from './i18n'
+
+/** 与 `image-host.prompt.save` 的 Schema 上限一致。 */
+const MAX_LENGTH = 8000
 
 /** 提示词模板编辑与注入预览；预览始终对应已保存的模板。 */
 export function PromptEditor({ library }: { library: LibraryView }) {
@@ -21,6 +24,9 @@ export function PromptEditor({ library }: { library: LibraryView }) {
         onError: (error) => toast.error(t('image-host.prompt.saveFailed'), { description: apiErrorMessage(error) }),
     })
     const missing = !draft.includes('{categories}') || !draft.includes('{url}')
+    const tooLong = draft.length > MAX_LENGTH
+    const canSave = !save.pending && !tooLong && draft !== prompt.template
+    useSaveShortcut(() => void save({ template: draft }), canSave)
     return (
         <div className="grid items-start gap-6 xl:grid-cols-2">
             <Section
@@ -39,7 +45,7 @@ export function PromptEditor({ library }: { library: LibraryView }) {
                             <RotateCcwIcon />
                             {t('image-host.prompt.reset')}
                         </Button>
-                        <Button size="sm" disabled={save.pending || draft === prompt.template} onClick={() => void save({ template: draft })}>
+                        <Button size="sm" disabled={!canSave} title={saveShortcutLabel} aria-keyshortcuts={saveShortcutLabel === '⌘S' ? 'Meta+S' : 'Control+S'} onClick={() => void save({ template: draft })}>
                             {save.pending ? <Spinner /> : <SaveIcon />}
                             {t('image-host.save')}
                         </Button>
@@ -53,13 +59,19 @@ export function PromptEditor({ library }: { library: LibraryView }) {
                 )}
                 <Textarea
                     aria-label={t('image-host.prompt.template')}
+                    aria-invalid={tooLong}
                     className="min-h-72 font-mono text-xs leading-5"
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                 />
-                <p className={missing ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
-                    {t(missing ? 'image-host.prompt.missing' : 'image-host.prompt.hint', { placeholder: '{categories}', url: '{url}' })}
-                </p>
+                <div className="flex items-start gap-3 text-xs">
+                    <p className={cn('flex-1', missing ? 'text-destructive' : 'text-muted-foreground')}>
+                        {t(missing ? 'image-host.prompt.missing' : 'image-host.prompt.hint', { placeholder: '{categories}', url: '{url}' })}
+                    </p>
+                    <span className={cn('shrink-0 tabular-nums', tooLong ? 'text-destructive' : 'text-muted-foreground')}>
+                        {draft.length} / {MAX_LENGTH}
+                    </span>
+                </div>
             </Section>
             <Section title={t('image-host.prompt.preview')}>
                 {prompt.preview === '' ? (

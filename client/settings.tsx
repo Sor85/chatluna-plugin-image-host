@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Button, CodeValue, Input, Label, Section, SettingRow, Spinner, Switch } from '@chatluna/ui-kit'
+import { Button, CodeValue, Input, Label, Section, SettingRow, Spinner, Switch, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
 import { RotateCcwIcon, SaveIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView, Settings } from '../src/types'
@@ -41,6 +41,8 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
     const valid = size !== undefined && urlValid
     const next: Settings | undefined = valid ? { injectPrompt: draft.injectPrompt, baseUrl, maxFileSize: size } : undefined
     const changed = next === undefined || JSON.stringify(next) !== savedKey
+    const canSave = !save.pending && next !== undefined && changed
+    useSaveShortcut(() => next && void save(next), canSave)
     const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }))
 
     return (
@@ -58,7 +60,7 @@ export function SettingsPanel({ library }: { library: LibraryView }) {
                         <RotateCcwIcon />
                         {t('image-host.settings.reset')}
                     </Button>
-                    <Button size="sm" disabled={save.pending || !valid || !changed} onClick={() => next && void save(next)}>
+                    <Button size="sm" disabled={!canSave} title={saveShortcutLabel} aria-keyshortcuts={saveShortcutLabel === '⌘S' ? 'Meta+S' : 'Control+S'} onClick={() => next && void save(next)}>
                         {save.pending ? <Spinner /> : <SaveIcon />}
                         {t('image-host.save')}
                     </Button>

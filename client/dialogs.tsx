@@ -31,7 +31,9 @@ import {
     SelectValue,
     Spinner,
     Textarea,
+    cn,
 } from '@chatluna/ui-kit'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { CategoryView, ImageEntry } from '../src/types'
 import { invalidName, mimeOfName } from '../src/utils'
@@ -208,30 +210,65 @@ export function MoveDialog({ image, category, categories, onClose }: {
     )
 }
 
-export function PreviewDialog({ src, image, address, onClose }: {
-    src: string
-    image: ImageEntry
+/** 大图预览；左右方向键或按钮在当前筛选、排序后的列表中切换。 */
+export function PreviewDialog({ images, index, src, address, onIndexChange, onClose }: {
+    images: readonly ImageEntry[]
+    index: number
+    src(image: ImageEntry): string
     /** 公开图片地址；隐藏分类、「只能随机」的分类和隐藏图片没有。 */
-    address?: string
+    address(image: ImageEntry): string | undefined
+    onIndexChange(index: number): void
     onClose(): void
 }) {
     const t = useT()
+    const image = images[index]!
+    const url = address(image)
+    const go = (step: number) => {
+        const next = index + step
+        if (next >= 0 && next < images.length) onIndexChange(next)
+    }
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent
+                className="sm:max-w-2xl"
+                onKeyDown={(event) => {
+                    if (event.target instanceof HTMLElement && event.target.closest('input, textarea')) return
+                    if (event.key === 'ArrowLeft') go(-1)
+                    else if (event.key === 'ArrowRight') go(1)
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle className="truncate pr-8">{image.file}</DialogTitle>
                     <DialogDescription>
                         {formatSize(image.size)} · {image.mime}
+                        {!image.exposed && ` · ${t('image-host.image.hidden')}`}
                     </DialogDescription>
                 </DialogHeader>
-                <img src={src} alt={image.file} className="max-h-[60vh] w-full rounded-lg bg-muted/40 object-contain" />
-                {address !== undefined && (
-                    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                        {t('image-host.usage.file')}
-                        <CodeValue value={address} copy={t('image-host.usage.copy')} />
-                    </div>
-                )}
+                <img
+                    key={image.file}
+                    src={src(image)}
+                    alt={image.file}
+                    className={cn('max-h-[60vh] w-full rounded-lg bg-muted/40 object-contain', !image.exposed && 'opacity-60')}
+                />
+                <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {url !== undefined && (
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                            {t('image-host.usage.file')}
+                            <CodeValue value={url} copy={t('image-host.usage.copy')} />
+                        </span>
+                    )}
+                    {images.length > 1 && (
+                        <div className="ml-auto flex items-center gap-1">
+                            <Button variant="ghost" size="icon-sm" disabled={index === 0} aria-label={t('image-host.preview.prev')} onClick={() => go(-1)}>
+                                <ChevronLeftIcon />
+                            </Button>
+                            <span className="min-w-12 text-center tabular-nums">{t('image-host.preview.position', { index: index + 1, total: images.length })}</span>
+                            <Button variant="ghost" size="icon-sm" disabled={index === images.length - 1} aria-label={t('image-host.preview.next')} onClick={() => go(1)}>
+                                <ChevronRightIcon />
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
     )
