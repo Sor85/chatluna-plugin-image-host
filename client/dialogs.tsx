@@ -23,6 +23,7 @@ import {
     FieldGroup,
     FieldLabel,
     Input,
+    ScrollArea,
     Select,
     SelectContent,
     SelectGroup,
@@ -35,7 +36,7 @@ import {
 } from '@chatluna/ui-kit'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
-import type { CategoryView, ImageEntry } from '../src/types'
+import type { CategoryView, ImageEntry, UploadConflictMode } from '../src/types'
 import { invalidName, mimeOfName } from '../src/utils'
 import { useT } from './i18n'
 import { formatSize } from './upload'
@@ -296,6 +297,34 @@ export function ConfirmDialog({ title, body, action, pending, onConfirm, onClose
                         {pending && <Spinner />}
                         {action}
                     </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}
+
+/** 上传的图片与分类内已有图片同名时选择处理方式；关闭弹窗等同于跳过。 */
+export function ConflictDialog({ files, onResolve }: {
+    files: readonly string[]
+    onResolve(mode?: Exclude<UploadConflictMode, 'ask'>): void
+}) {
+    const t = useT()
+    return (
+        <AlertDialog open onOpenChange={(open) => !open && onResolve()}>
+            <AlertDialogContent className="text-sm leading-5">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{t('image-host.conflict.title', { count: files.length })}</AlertDialogTitle>
+                    <AlertDialogDescription>{t('image-host.conflict.body')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <ScrollArea className="max-h-40 min-h-0 rounded-md border">
+                    <ul className="px-3 py-2">
+                        {files.map((file, index) => <li key={index} className="truncate font-mono text-xs leading-5" title={file}>{file}</li>)}
+                    </ul>
+                </ScrollArea>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>{t('image-host.conflict.skip')}</AlertDialogCancel>
+                    <AlertDialogAction variant="outline" onClick={() => onResolve('rename')}>{t('image-host.conflict.rename')}</AlertDialogAction>
+                    <AlertDialogAction variant="destructive" onClick={() => onResolve('overwrite')}>{t('image-host.conflict.overwrite')}</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

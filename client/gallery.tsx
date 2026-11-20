@@ -39,9 +39,9 @@ import {
     ZoomInIcon,
 } from 'lucide-react'
 import { apiBase, apiErrorMessage, toast, useAction, type Translate } from '@chatluna/ui-client/client'
-import type { CategoryView, ImageEntry, LibraryView, UploadResult } from '../src/types'
+import type { CategoryView, ImageEntry, LibraryView, UploadConflictMode, UploadResult } from '../src/types'
 import { useT } from './i18n'
-import { CategoryDialog, ConfirmDialog, MoveDialog, PreviewDialog } from './dialogs'
+import { CategoryDialog, ConfirmDialog, ConflictDialog, MoveDialog, PreviewDialog } from './dialogs'
 import { batches, encode, formatSize, reportDedupe, reportUpload } from './upload'
 
 export function imageUrl(library: LibraryView, category: string, image: ImageEntry) {
@@ -121,6 +121,7 @@ function CategoryPanel({ library, category, onSelect }: {
     const [deleting, setDeleting] = React.useState<string[]>()
     const [dragging, setDragging] = React.useState(false)
     const [progress, setProgress] = React.useState<{ done: number, total: number }>()
+    const [conflicts, setConflicts] = React.useState<{ files: string[], resolve(mode?: Exclude<UploadConflictMode, 'ask'>): void }>()
     const fileInput = React.useRef<HTMLInputElement>(null)
     const busy = React.useRef(false)
     const [copy, manualCopy] = useCopyText()
@@ -166,22 +167,39 @@ function CategoryPanel({ library, category, onSelect }: {
         }
         if (accepted.length === 0) return
         busy.current = true
-        setProgress({ done: 0, total: accepted.length })
-        const total: UploadResult = { added: [], duplicates: [], errors: [] }
-        try {
-            for (const batch of batches(accepted)) {
-                const result = await upload({ category: category.name, files: await encode(batch) })
+        const total: UploadResult = { added: [], replaced: [], duplicates: [], errors: [], conflicts: [] }
+        let skipped = 0
+        // 同名冲突的文件先不写入，全部批次结束后统一询问，再按所选方式重传这些文件。
+        const sendAll = async (files: File[], onConflict: UploadConflictMode) => {
+            const clashing: { file: File, existing: string }[] = []
+            setProgress({ done: 0, total: files.length })
+            for (const batch of batches(files)) {
+                const result = await upload({ category: category.name, files: await encode(batch), onConflict })
                 setProgress((current) => current && { ...current, done: current.done + batch.length })
                 if (!result) continue
                 total.added.push(...result.added)
+                total.replaced.push(...result.replaced)
                 total.duplicates.push(...result.duplicates)
                 total.errors.push(...result.errors)
+                clashing.push(...result.conflicts.map((conflict) => ({ file: batch[conflict.index]!, existing: conflict.existing })))
+            }
+            setProgress(undefined)
+            return clashing
+        }
+        try {
+            const clashing = await sendAll(accepted, 'ask')
+            if (clashing.length > 0) {
+                const mode = await new Promise<Exclude<UploadConflictMode, 'ask'> | undefined>((resolve) =>
+                    setConflicts({ files: clashing.map((item) => item.existing), resolve }))
+                setConflicts(undefined)
+                if (mode) await sendAll(clashing.map((item) => item.file), mode)
+                else skipped = clashing.length
             }
         } finally {
             busy.current = false
             setProgress(undefined)
         }
-        reportUpload(t, total)
+        reportUpload(t, total, skipped)
     }
     // 监听器只注册一次，通过 ref 调用最新的 send。
     const latestSend = React.useRef(send)
@@ -233,7 +251,7 @@ function CategoryPanel({ library, category, onSelect }: {
     const totalSize = category.images.reduce((sum, image) => sum + image.size, 0)
     const previewIndex = previewing === undefined ? -1 : images.findIndex((image) => image.file === previewing)
     const uploadButton = (
-        <Button size="sm" disabled={progress !== undefined} onClick={() => fileInput.current?.click()}>
+        <Button size="sm" disabled={progress !== undefined || conflicts !== undefined} onClick={() => fileInput.current?.click()}>
             {progress ? <Spinner /> : <UploadIcon />}
             <ButtonLabel>{t('image-host.upload.action')}</ButtonLabel>
         </Button>
@@ -436,6 +454,7 @@ function CategoryPanel({ library, category, onSelect }: {
                     onClose={() => setDeleting(undefined)}
                 />
             )}
+            {conflicts && <ConflictDialog files={conflicts.files} onResolve={conflicts.resolve} />}
             {removing && (
                 <ConfirmDialog
                     title={t('image-host.category.deleteTitle', { name: category.name })}

@@ -59,6 +59,13 @@ image-host.upload.busy: The previous upload is still in progress
 image-host.upload.progress: Uploading
 image-host.upload.dropHere: "Drop to upload to \"{name}\""
 image-host.upload.tooLarge: Exceeds the {size} limit
+image-host.upload.replaced: Replaced {count} images with the same name
+image-host.upload.skipped: Skipped {count} images with the same name
+image-host.conflict.title: "{count} images share a name with existing images"
+image-host.conflict.body: Replacing swaps the content of the existing images below while keeping their file names and Bot visibility; keeping both adds a number to the new file names.
+image-host.conflict.skip: Skip
+image-host.conflict.rename: Keep both
+image-host.conflict.overwrite: Replace
 image-host.image.empty: No images in this category
 image-host.image.emptyHint: Upload, drop or paste images; images with identical content are skipped.
 image-host.image.noMatch: No matching images

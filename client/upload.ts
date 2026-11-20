@@ -34,8 +34,13 @@ export async function encode(files: readonly File[]): Promise<UploadFile[]> {
     return Promise.all(files.map(async (file) => ({ name: file.name, content: await readBase64(file) })))
 }
 
-export function reportUpload(t: Translate, result: UploadResult) {
+/** `skipped` 是用户在同名冲突弹窗中选择跳过的数量。 */
+export function reportUpload(t: Translate, result: UploadResult, skipped: number) {
     if (result.added.length > 0) toast.success(t('image-host.upload.done', { count: result.added.length }))
+    if (result.replaced.length > 0) {
+        toast.success(t('image-host.upload.replaced', { count: result.replaced.length }), { description: result.replaced.join('\n') })
+    }
+    if (skipped > 0) toast.info(t('image-host.upload.skipped', { count: skipped }))
     if (result.duplicates.length > 0) {
         toast.info(t('image-host.upload.duplicates', { count: result.duplicates.length }), {
             description: result.duplicates.map((item) => `${item.name} → ${item.existing}`).join('\n'),

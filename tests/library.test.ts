@@ -121,11 +121,32 @@ describe('visibility', () => {
 describe('upload', () => {
     beforeEach(() => library.createCategory('猫猫'))
 
-    it('skips content already in the category and renames clashing names', async () => {
+    it('skips content already in the category and renames names clashing within the request', async () => {
         const first = await library.upload('猫猫', [upload('a.png', png(1)), upload('a.png', png(2)), upload('copy.png', png(1))], MB)
-        expect(first).toEqual({ added: ['a.png', 'a-1.png'], duplicates: [{ name: 'copy.png', existing: 'a.png' }], errors: [] })
+        expect(first).toEqual({ added: ['a.png', 'a-1.png'], replaced: [], duplicates: [{ name: 'copy.png', existing: 'a.png' }], errors: [], conflicts: [] })
         const second = await library.upload('猫猫', [upload('again.png', png(2))], MB)
         expect(second.duplicates).toEqual([{ name: 'again.png', existing: 'a-1.png' }])
+    })
+
+    it('reports names clashing with existing images until told to overwrite or rename', async () => {
+        await library.upload('猫猫', [upload('A.png', png(1))], MB)
+        await library.setImagesExposed('猫猫', ['A.png'], false)
+        const asked = await library.upload('猫猫', [upload('new.png', png(3)), upload('a.png', png(2))], MB)
+        expect(asked.added).toEqual(['new.png'])
+        expect(asked.conflicts).toEqual([{ index: 1, name: 'a.png', existing: 'A.png' }])
+        const original = library.find('猫猫')!.images.get('A.png')!.hash
+
+        const replaced = await library.upload('猫猫', [upload('a.png', png(2))], MB, 'overwrite')
+        expect(replaced).toMatchObject({ added: [], replaced: ['A.png'], conflicts: [] })
+        const image = library.find('猫猫')!.images.get('A.png')!
+        expect(image.hash).not.toBe(original)
+        expect(image.exposed).toBe(false)
+        expect(await readFile(join(library.imageDir, '猫猫', 'A.png'))).toEqual(png(2))
+        // 被覆盖掉的旧内容不再算作重复。
+        expect((await library.upload('猫猫', [upload('old.png', png(1))], MB)).added).toEqual(['old.png'])
+
+        const renamed = await library.upload('猫猫', [upload('a.png', png(4))], MB, 'rename')
+        expect(renamed).toMatchObject({ added: ['a-1.png'], replaced: [], conflicts: [] })
     })
 
     it('rejects non-images, empty and oversized files and fixes extensions', async () => {

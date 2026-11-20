@@ -57,10 +57,20 @@ export interface UploadFile {
     content: string
 }
 
+/**
+ * 文件名与分类内已有图片相同（内容不同）时的处理方式：`ask` 不写入并在 `conflicts` 中返回，由页面询问；
+ * `overwrite` 替换已有文件的内容；`rename` 追加 -1、-2… 序号保留两者。
+ */
+export type UploadConflictMode = 'ask' | 'overwrite' | 'rename'
+
 export interface UploadResult {
     added: string[]
+    /** 被覆盖的已有文件名。 */
+    replaced: string[]
     duplicates: { name: string, existing: string }[]
     errors: { name: string, message: string }[]
+    /** `ask` 模式下与已有图片同名而未写入的文件；`index` 是该文件在本次请求 `files` 中的下标。 */
+    conflicts: { index: number, name: string, existing: string }[]
 }
 
 export interface DedupeResult {

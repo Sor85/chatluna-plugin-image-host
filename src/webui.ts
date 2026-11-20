@@ -5,7 +5,7 @@ import type {} from '@chatluna/ui-server'
 import type {} from '@chatluna/ui-client/client'
 import type { Request } from '@cordisjs/plugin-server'
 import type { ImageLibrary } from './library'
-import type { DedupeResult, LibraryView, Settings, UploadFile, UploadResult } from './types'
+import type { DedupeResult, LibraryView, Settings, UploadConflictMode, UploadFile, UploadResult } from './types'
 import { DEFAULT_PROMPT, DEFAULT_SETTINGS, PUBLIC_ROUTE, renderPrompt } from './utils'
 
 export const FILE_ROUTE = '/image-host/files'
@@ -18,7 +18,7 @@ declare module '@chatluna/ui-client/client' {
         'image-host.category.create'(input: { name: string, description?: string }): void
         'image-host.category.update'(input: { name: string, rename?: string, description?: string, exposed?: boolean, randomOnly?: boolean }): void
         'image-host.category.delete'(input: { name: string }): void
-        'image-host.image.upload'(input: { category: string, files: UploadFile[] }): UploadResult
+        'image-host.image.upload'(input: { category: string, files: UploadFile[], onConflict?: UploadConflictMode }): UploadResult
         'image-host.image.move'(input: { category: string, file: string, target?: string, rename?: string }): void
         'image-host.image.expose'(input: { category: string, files: string[], exposed: boolean }): void
         'image-host.image.delete'(input: { category: string, files: string[] }): void
@@ -79,8 +79,9 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
         input: Schema.object({
             category: name,
             files: Schema.array(Schema.object({ name: Schema.string().max(255).required(), content: Schema.string().required() })).min(1).max(50).required(),
+            onConflict: Schema.union(['ask', 'overwrite', 'rename']),
         }),
-    }, ({ category, files }) => library.upload(category, files, library.settings.maxFileSize * MB))
+    }, ({ category, files, onConflict }) => library.upload(category, files, library.settings.maxFileSize * MB, onConflict))
     webui.action('image-host.image.move', {
         input: Schema.object({ category: name, file: name, target: Schema.string().max(64), rename: Schema.string().max(64) }),
     }, ({ category, file, target, rename }) => library.moveImage(category, file, { category: target, file: rename }))

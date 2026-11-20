@@ -59,6 +59,13 @@ image-host.upload.busy: 上一批图片仍在上传
 image-host.upload.progress: 正在上传
 image-host.upload.dropHere: "松开以上传到「{name}」"
 image-host.upload.tooLarge: 超过 {size} 上限
+image-host.upload.replaced: 已覆盖 {count} 张同名图片
+image-host.upload.skipped: 跳过 {count} 张同名图片
+image-host.conflict.title: "{count} 张图片与已有图片同名"
+image-host.conflict.body: 覆盖会替换以下已有图片的内容，文件名与 Bot 可见性不变；保留两者时新图片的文件名追加序号。
+image-host.conflict.skip: 跳过
+image-host.conflict.rename: 保留两者
+image-host.conflict.overwrite: 覆盖
 image-host.image.empty: 该分类暂无图片
 image-host.image.emptyHint: 上传、拖入或粘贴图片；相同内容的图片自动跳过。
 image-host.image.noMatch: 没有匹配的图片

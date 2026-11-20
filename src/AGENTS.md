@@ -4,7 +4,8 @@
 
 - `index.ts` 只装配，插件没有配置项：设置全部在侧栏页面修改，`Config` 只导出带说明的空 `Schema.object({})`，因为插件管理页在没有 Schema 时会回退成原始 YAML 编辑器；存在 `meta.json` 的 `settings`（只存与 `utils.ts` 的 `DEFAULT_SETTINGS` 不同的项），数据目录固定为 `DATA_DIR`，因为设置本身就存在其中。读取设置的地方每次取 `library.settings`，保存后立即生效、无需重载插件。不依赖 `koishi`，`agents`、`chatluna_webui`、`server`/`chatluna_server` 均为可选注入；没有 `server` 时没有公开图片路由，提示词也不注入。
 - `library.ts` 的 `ImageLibrary` 是唯一读写图库的入口。所有修改经 `run()` 串行执行，结束后写回 `meta.json`（临时文件 + rename）并触发 `image-host.library` 状态刷新。修改以磁盘为准，`rescan()` 从目录重建，名称不合法或扩展名不支持的文件跳过而不改名。
-- 去重以 SHA-256 为准，范围是单个分类：上传时跳过分类内已有内容；移动到其他分类时目标已有相同内容则拒绝；`dedupe()` 删除分类内重复项并保留最早的一张。同一图片允许出现在不同分类。
+- 去重以 SHA-256 为准，范围是单个分类：上传时跳过分类内已有内容（先于同名判断，所以同名冲突一定是内容不同）；移动到其他分类时目标已有相同内容则拒绝；`dedupe()` 删除分类内重复项并保留最早的一张。同一图片允许出现在不同分类。
+- 上传的同名处理由 `onConflict` 决定（`UploadConflictMode`）：默认 `ask` 时与请求开始前已有图片同名（大小写不敏感）的文件不写入，按下标返回在 `conflicts` 中，由页面询问后重传；`overwrite` 只替换内容，保留原文件名与可见性；`rename` 追加序号。同一请求内后到的同名文件直接追加序号，因为浏览器粘贴的图片都叫 `image.png`。
 - 随机地址 `<图片根地址>/<分类>` 用每分类一个洗牌袋，只在 Bot 可见的图片中取：一轮内每张只返回一次，换轮时避免与上一张相同；上传、移动、重扫、重新显示图片后重洗。状态只在内存中。
 - 可见性分两级：分类的 `exposed` 与 `randomOnly`，图片的 `exposed`（`ImageEntry.exposed`，`meta.json` 中按文件名存在分类的 `hidden`，`moveImage` 复制条目所以改名、移动后保留）。`renderPrompt` 只计入可见图片，`randomOnly` 分类只列分类头并标注「只能随机」、不列文件名。提示词不设文件数上限：以分类和图片级的可见性取代原 `promptFileLimit` 设置；`library.settings` 只取 `DEFAULT_SETTINGS` 中的键，旧版留下的已删除项读取时忽略、下次保存时清除。
 - 不注册聊天指令：随机与指定发图都通过图片地址完成，Bot 在 `<img src>` 中写随机地址或指定地址。

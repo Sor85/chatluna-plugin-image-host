@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ChatLunaError, notFound, validationError } from '@chatluna/protocol'
-import type { CategoryView, DedupeResult, ImageEntry, Settings, UploadFile, UploadResult } from './types'
+import type { CategoryView, DedupeResult, ImageEntry, Settings, UploadConflictMode, UploadFile, UploadResult } from './types'
 import { DEFAULT_PROMPT, DEFAULT_SETTINGS, invalidName, mimeOfName, normalizeFileName, sniffImage, uniqueFileName } from './utils'
 
 interface CategoryMeta {
@@ -184,12 +184,17 @@ export class ImageLibrary {
         })
     }
 
-    upload(name: string, files: readonly UploadFile[], maxSize: number) {
+    /**
+     * 文件名冲突只针对请求开始前已有的图片：同一请求内后来的同名文件追加序号，
+     * 浏览器粘贴的图片都叫 image.png，一次粘贴多张不该互相冲突。
+     */
+    upload(name: string, files: readonly UploadFile[], maxSize: number, mode: UploadConflictMode = 'ask') {
         return this.run(async () => {
             const category = this.require(name)
-            const result: UploadResult = { added: [], duplicates: [], errors: [] }
+            const result: UploadResult = { added: [], replaced: [], duplicates: [], errors: [], conflicts: [] }
             const hashes = new Map([...category.images.values()].map((image) => [image.hash, image.file]))
-            for (const upload of files) {
+            const before = new Set([...category.images.keys()].map((file) => file.toLowerCase()))
+            for (const [index, upload] of files.entries()) {
                 const data = Buffer.from(upload.content, 'base64')
                 if (data.length === 0) {
                     result.errors.push({ name: upload.name, message: '文件为空' })
@@ -210,8 +215,26 @@ export class ImageLibrary {
                     result.duplicates.push({ name: upload.name, existing })
                     continue
                 }
+                const normalized = normalizeFileName(upload.name, mime)
                 // 大小写不敏感的文件系统上 A.png 与 a.png 是同一个文件。
-                const file = uniqueFileName(normalizeFileName(upload.name, mime), (candidate) =>
+                const clash = before.has(normalized.toLowerCase())
+                    ? [...category.images.values()].find((image) => image.file.toLowerCase() === normalized.toLowerCase())
+                    : undefined
+                if (clash && mode === 'ask') {
+                    result.conflicts.push({ index, name: upload.name, existing: clash.file })
+                    continue
+                }
+                if (clash && mode === 'overwrite') {
+                    // 保留原文件名与可见性，只替换内容。
+                    await writeFile(join(this.imageDir, category.name, clash.file), data)
+                    const info = await stat(join(this.imageDir, category.name, clash.file))
+                    if (hashes.get(clash.hash) === clash.file) hashes.delete(clash.hash)
+                    category.images.set(clash.file, { ...clash, size: data.length, mime, hash, mtime: info.mtimeMs })
+                    hashes.set(hash, clash.file)
+                    result.replaced.push(clash.file)
+                    continue
+                }
+                const file = uniqueFileName(normalized, (candidate) =>
                     [...category.images.keys()].some((taken) => taken.toLowerCase() === candidate.toLowerCase()))
                 await writeFile(join(this.imageDir, category.name, file), data)
                 const info = await stat(join(this.imageDir, category.name, file))
@@ -219,7 +242,7 @@ export class ImageLibrary {
                 hashes.set(hash, file)
                 result.added.push(file)
             }
-            // 新图加入后重新洗牌，让它们进入当前轮次。
+            // 新图加入或内容替换后重新洗牌，让它们进入当前轮次。
             this.bags.delete(category.name)
             return result
         })
