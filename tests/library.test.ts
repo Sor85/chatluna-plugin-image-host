@@ -149,6 +149,21 @@ describe('upload', () => {
         expect(renamed).toMatchObject({ added: ['a-1.png'], replaced: [], conflicts: [] })
     })
 
+    it('saves bot images into visible categories only, keeping both on name clashes', async () => {
+        const watched = vi.fn()
+        const unwatch = library.watch(watched)
+        await library.upload('猫猫', [upload('a.png', png(1))], MB)
+        expect(await library.save('猫猫', { name: 'a.img', data: png(2) }, MB)).toMatchObject({ added: ['a-1.png'] })
+        expect(await library.save('猫猫', { name: 'b.img', data: png(1) }, MB)).toMatchObject({ added: [], duplicates: [{ name: 'b.img', existing: 'a.png' }] })
+        expect(library.find('猫猫')!.images.get('a-1.png')!.exposed).toBe(true)
+        expect(watched).toHaveBeenCalledTimes(3)
+        unwatch()
+        await library.updateCategory('猫猫', { exposed: false })
+        await expect(library.save('猫猫', { name: 'c.img', data: png(3) }, MB)).rejects.toThrow('分类不存在')
+        await expect(library.save('狗狗', { name: 'c.img', data: png(3) }, MB)).rejects.toThrow('分类不存在')
+        expect(watched).toHaveBeenCalledTimes(3)
+    })
+
     it('rejects non-images, empty and oversized files and fixes extensions', async () => {
         const result = await library.upload('猫猫', [
             upload('fake.png', Buffer.from('<svg/>')),

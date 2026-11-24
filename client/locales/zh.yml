@@ -126,7 +126,9 @@ image-host.settings.baseUrlInvalid: "地址需以 http:// 或 https:// 开头，
 image-host.settings.currentUrl: "当前图片根地址"
 image-host.settings.noServer: "未加载 HTTP 服务，没有图片地址，提示词不注入。"
 image-host.settings.maxFileSize: "单张大小上限（MB）"
-image-host.settings.maxFileSizeHint: "上传单张图片的最大体积。"
+image-host.settings.maxFileSizeHint: "上传或 Bot 收藏单张图片的最大体积。"
+image-host.settings.botSave: "允许 Bot 收藏图片"
+image-host.settings.botSaveHint: "向 Bot 提供 image_host_save 工具，把聊天中的图片存入对 Bot 可见的已有分类，存入后立即对 Bot 可见。分类内已有相同图片时不重复存入，重名时追加序号。"
 image-host.settings.dataDir: "图片目录"
 image-host.settings.dataDirHint: "图片按「分类/文件」存放；直接放入文件后点击「重新扫描」即可载入。"
 image-host.settings.copyPath: "复制路径"
@@ -139,7 +141,7 @@ image-host.about.summary: 在侧栏页面上传、分类管理图片，并向 Bo
 image-host.settings.sections: 设置分区
 image-host.settings.unsaved: 有未保存的修改
 image-host.settings.section.general: 常规
-image-host.settings.section.generalHint: 图片访问地址与上传限制，保存后立即生效
+image-host.settings.section.generalHint: 图片访问地址、上传限制与 Bot 收藏，保存后立即生效
 image-host.settings.section.storage: 存储
 image-host.settings.section.storageHint: 图片在磁盘上的位置与图库概况
 image-host.settings.section.about: 关于

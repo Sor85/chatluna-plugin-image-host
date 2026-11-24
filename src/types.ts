@@ -26,8 +26,10 @@ export interface Settings {
     injectPrompt: boolean
     /** 聊天平台下载图片使用的服务器地址；空字符串时使用 ChatLuna 服务器自身地址。 */
     baseUrl: string
-    /** 单张上传上限，单位 MB。 */
+    /** 单张上传上限，单位 MB；Bot 收藏图片同样受限。 */
     maxFileSize: number
+    /** 向 Bot 提供 `image_host_save` 工具，把聊天中的图片存入对 Bot 可见的分类。 */
+    botSave: boolean
 }
 
 export interface LibraryView {

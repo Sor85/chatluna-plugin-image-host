@@ -5,6 +5,7 @@ import { resolveFromBaseUrl } from '@chatluna/utils'
 import { ImageLibrary } from './library'
 import { registerPrompt } from './prompt'
 import { registerPublicRoute } from './public'
+import { registerTool } from './tool'
 import { publicImageUrl } from './utils'
 import { registerWebUI } from './webui'
 
@@ -27,5 +28,6 @@ export async function apply(ctx: Context) {
     const imageUrl = () => (ctx.get('server') ? publicImageUrl(library.settings.baseUrl || serverUrl()) : '')
     ctx.inject(['server'], (ctx) => registerPublicRoute(ctx, library))
     ctx.inject(['agents'], (ctx) => registerPrompt(ctx, library, imageUrl))
+    ctx.inject(['tools'], (ctx) => registerTool(ctx, library, imageUrl))
     ctx.inject(['chatluna_webui'], (ctx) => registerWebUI(ctx, library, { serverUrl, imageUrl }))
 }

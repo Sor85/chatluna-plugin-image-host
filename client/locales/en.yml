@@ -126,7 +126,9 @@ image-host.settings.baseUrlInvalid: "The address must start with http:// or http
 image-host.settings.currentUrl: "Current image root URL"
 image-host.settings.noServer: "The HTTP server is not loaded, so there are no image URLs and no prompt is injected."
 image-host.settings.maxFileSize: "Max size per image (MB)"
-image-host.settings.maxFileSizeHint: "Largest size accepted for a single upload."
+image-host.settings.maxFileSizeHint: "Largest size accepted for a single upload or bot save."
+image-host.settings.botSave: "Let the bot save images"
+image-host.settings.botSaveHint: "Offers the bot the image_host_save tool, which stores images from the chat in existing bot-visible categories; saved images are visible to the bot right away. Identical images in a category are not stored twice, and taken names get a numeric suffix."
 image-host.settings.dataDir: "Image folder"
 image-host.settings.dataDirHint: "Images are stored as category/file; files copied in load after Rescan."
 image-host.settings.copyPath: "Copy path"
@@ -139,7 +141,7 @@ image-host.about.summary: "Upload and categorize images in the sidebar page and 
 image-host.settings.sections: Settings sections
 image-host.settings.unsaved: Unsaved changes
 image-host.settings.section.general: General
-image-host.settings.section.generalHint: Image URL and upload limit; changes apply on save
+image-host.settings.section.generalHint: Image URL, upload limit and bot saving; changes apply on save
 image-host.settings.section.storage: Storage
 image-host.settings.section.storageHint: Where images live on disk and a library overview
 image-host.settings.section.about: About

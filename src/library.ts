@@ -62,6 +62,7 @@ export class ImageLibrary {
     private bags = new Map<string, string[]>()
     private last = new Map<string, string>()
     private queue: Promise<unknown> = Promise.resolve()
+    private watchers = new Set<() => void>()
     readonly imageDir: string
 
     constructor(private root: string, private onChange: () => void) {
@@ -189,63 +190,76 @@ export class ImageLibrary {
      * 浏览器粘贴的图片都叫 image.png，一次粘贴多张不该互相冲突。
      */
     upload(name: string, files: readonly UploadFile[], maxSize: number, mode: UploadConflictMode = 'ask') {
+        return this.run(() => this.add(this.require(name), files.map((file) => ({ name: file.name, data: Buffer.from(file.content, 'base64') })), maxSize, mode))
+    }
+
+    /**
+     * Bot 经 `image_host_save` 工具收藏一张图片：只能存入对 Bot 可见的已有分类，同名时追加序号保留两者，
+     * 分类内已有相同内容时不重复写入。新图立即对 Bot 可见。
+     */
+    save(name: string, file: { name: string, data: Uint8Array }, maxSize: number) {
         return this.run(async () => {
             const category = this.require(name)
-            const result: UploadResult = { added: [], replaced: [], duplicates: [], errors: [], conflicts: [] }
-            const hashes = new Map([...category.images.values()].map((image) => [image.hash, image.file]))
-            const before = new Set([...category.images.keys()].map((file) => file.toLowerCase()))
-            for (const [index, upload] of files.entries()) {
-                const data = Buffer.from(upload.content, 'base64')
-                if (data.length === 0) {
-                    result.errors.push({ name: upload.name, message: '文件为空' })
-                    continue
-                }
-                if (data.length > maxSize) {
-                    result.errors.push({ name: upload.name, message: `超过 ${Math.round(maxSize / 1024 / 1024)} MB 上限` })
-                    continue
-                }
-                const mime = sniffImage(data)
-                if (!mime) {
-                    result.errors.push({ name: upload.name, message: '不是支持的图片格式（PNG、JPEG、GIF、WebP、BMP）' })
-                    continue
-                }
-                const hash = hashOf(data)
-                const existing = hashes.get(hash)
-                if (existing) {
-                    result.duplicates.push({ name: upload.name, existing })
-                    continue
-                }
-                const normalized = normalizeFileName(upload.name, mime)
-                // 大小写不敏感的文件系统上 A.png 与 a.png 是同一个文件。
-                const clash = before.has(normalized.toLowerCase())
-                    ? [...category.images.values()].find((image) => image.file.toLowerCase() === normalized.toLowerCase())
-                    : undefined
-                if (clash && mode === 'ask') {
-                    result.conflicts.push({ index, name: upload.name, existing: clash.file })
-                    continue
-                }
-                if (clash && mode === 'overwrite') {
-                    // 保留原文件名与可见性，只替换内容。
-                    await writeFile(join(this.imageDir, category.name, clash.file), data)
-                    const info = await stat(join(this.imageDir, category.name, clash.file))
-                    if (hashes.get(clash.hash) === clash.file) hashes.delete(clash.hash)
-                    category.images.set(clash.file, { ...clash, size: data.length, mime, hash, mtime: info.mtimeMs })
-                    hashes.set(hash, clash.file)
-                    result.replaced.push(clash.file)
-                    continue
-                }
-                const file = uniqueFileName(normalized, (candidate) =>
-                    [...category.images.keys()].some((taken) => taken.toLowerCase() === candidate.toLowerCase()))
-                await writeFile(join(this.imageDir, category.name, file), data)
-                const info = await stat(join(this.imageDir, category.name, file))
-                category.images.set(file, { file, size: data.length, mime, hash, mtime: info.mtimeMs, exposed: true })
-                hashes.set(hash, file)
-                result.added.push(file)
-            }
-            // 新图加入或内容替换后重新洗牌，让它们进入当前轮次。
-            this.bags.delete(category.name)
-            return result
+            if (!category.exposed) throw notFound(`分类不存在：${name}`)
+            return this.add(category, [{ name: file.name, data: Buffer.from(file.data) }], maxSize, 'rename')
         })
+    }
+
+    private async add(category: Category, files: readonly { name: string, data: Buffer }[], maxSize: number, mode: UploadConflictMode) {
+        const result: UploadResult = { added: [], replaced: [], duplicates: [], errors: [], conflicts: [] }
+        const hashes = new Map([...category.images.values()].map((image) => [image.hash, image.file]))
+        const before = new Set([...category.images.keys()].map((file) => file.toLowerCase()))
+        for (const [index, upload] of files.entries()) {
+            const { data } = upload
+            if (data.length === 0) {
+                result.errors.push({ name: upload.name, message: '文件为空' })
+                continue
+            }
+            if (data.length > maxSize) {
+                result.errors.push({ name: upload.name, message: `超过 ${Math.round(maxSize / 1024 / 1024)} MB 上限` })
+                continue
+            }
+            const mime = sniffImage(data)
+            if (!mime) {
+                result.errors.push({ name: upload.name, message: '不是支持的图片格式（PNG、JPEG、GIF、WebP、BMP）' })
+                continue
+            }
+            const hash = hashOf(data)
+            const existing = hashes.get(hash)
+            if (existing) {
+                result.duplicates.push({ name: upload.name, existing })
+                continue
+            }
+            const normalized = normalizeFileName(upload.name, mime)
+            // 大小写不敏感的文件系统上 A.png 与 a.png 是同一个文件。
+            const clash = before.has(normalized.toLowerCase())
+                ? [...category.images.values()].find((image) => image.file.toLowerCase() === normalized.toLowerCase())
+                : undefined
+            if (clash && mode === 'ask') {
+                result.conflicts.push({ index, name: upload.name, existing: clash.file })
+                continue
+            }
+            if (clash && mode === 'overwrite') {
+                // 保留原文件名与可见性，只替换内容。
+                await writeFile(join(this.imageDir, category.name, clash.file), data)
+                const info = await stat(join(this.imageDir, category.name, clash.file))
+                if (hashes.get(clash.hash) === clash.file) hashes.delete(clash.hash)
+                category.images.set(clash.file, { ...clash, size: data.length, mime, hash, mtime: info.mtimeMs })
+                hashes.set(hash, clash.file)
+                result.replaced.push(clash.file)
+                continue
+            }
+            const file = uniqueFileName(normalized, (candidate) =>
+                [...category.images.keys()].some((taken) => taken.toLowerCase() === candidate.toLowerCase()))
+            await writeFile(join(this.imageDir, category.name, file), data)
+            const info = await stat(join(this.imageDir, category.name, file))
+            category.images.set(file, { file, size: data.length, mime, hash, mtime: info.mtimeMs, exposed: true })
+            hashes.set(hash, file)
+            result.added.push(file)
+        }
+        // 新图加入或内容替换后重新洗牌，让它们进入当前轮次。
+        this.bags.delete(category.name)
+        return result
     }
 
     /** 重命名图片或移到其他分类；目标分类已有相同内容时拒绝，避免移动造成重复。 */
@@ -349,12 +363,19 @@ export class ImageLibrary {
         this.last.delete(category.name)
     }
 
+    /** 每次修改完成后调用；返回取消订阅的函数。 */
+    watch(listener: () => void) {
+        this.watchers.add(listener)
+        return () => void this.watchers.delete(listener)
+    }
+
     /** 串行执行修改，完成后同步元数据并通知；失败不影响后续任务。 */
     private run<T>(task: () => Promise<T>): Promise<T> {
         const next = this.queue.then(async () => {
             const value = await task()
             await this.writeMeta()
             this.onChange()
+            for (const listener of this.watchers) listener()
             return value
         })
         this.queue = next.catch(() => {})

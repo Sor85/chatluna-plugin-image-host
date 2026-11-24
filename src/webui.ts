@@ -103,6 +103,7 @@ export function registerWebUI(ctx: Context, library: ImageLibrary, options: WebO
             injectPrompt: Schema.boolean(),
             baseUrl: Schema.string().max(500).pattern(/^(https?:\/\/[^\s/?#]+(\/[^\s?#]*)?)?$/u),
             maxFileSize: Schema.natural().min(1).max(50),
+            botSave: Schema.boolean(),
         }),
     }, (patch) => library.setSettings(patch))
 

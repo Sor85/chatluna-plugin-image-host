@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Button, CodeValue, Input, Label, SettingRow, Spinner, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
+import { Button, CodeValue, Input, Label, SettingRow, Spinner, Switch, cn, saveShortcutLabel, useSaveShortcut } from '@chatluna/ui-kit'
 import { DatabaseIcon, InfoIcon, RotateCcwIcon, SaveIcon, SlidersHorizontalIcon, type LucideIcon } from 'lucide-react'
 import { apiErrorMessage, toast, useAction } from '@chatluna/ui-client/client'
 import type { LibraryView, Settings } from '../src/types'
@@ -11,11 +11,12 @@ import { formatSize } from './upload'
 type Fields = Omit<Settings, 'injectPrompt'>
 type Draft = { [K in keyof Fields]: Fields[K] extends number ? string : Fields[K] }
 
-const pick = ({ baseUrl, maxFileSize }: Settings): Fields => ({ baseUrl, maxFileSize })
+const pick = ({ baseUrl, maxFileSize, botSave }: Settings): Fields => ({ baseUrl, maxFileSize, botSave })
 
 const toDraft = (settings: Settings): Draft => ({
     baseUrl: settings.baseUrl,
     maxFileSize: String(settings.maxFileSize),
+    botSave: settings.botSave,
 })
 
 const urlPattern = /^(https?:\/\/[^\s/?#]+(\/[^\s?#]*)?)?$/u
@@ -61,7 +62,7 @@ export function SettingsPanel({ library, section, onSection }: {
     const baseUrl = draft.baseUrl.trim().replace(/\/+$/u, '')
     const urlValid = urlPattern.test(baseUrl)
     const valid = size !== undefined && urlValid
-    const next: Fields | undefined = valid ? { baseUrl, maxFileSize: size } : undefined
+    const next: Fields | undefined = valid ? { baseUrl, maxFileSize: size, botSave: draft.botSave } : undefined
     const changed = next === undefined || JSON.stringify(next) !== savedKey
     const canSave = !save.pending && next !== undefined && changed
     const dirty = JSON.stringify(draft) !== JSON.stringify(toDraft(library.settings))
@@ -115,6 +116,11 @@ export function SettingsPanel({ library, section, onSection }: {
                             onChange={(event) => set('maxFileSize', event.target.value)}
                         />
                     )}
+                />
+                <SettingRow
+                    title={<Label htmlFor="image-host-bot-save">{t('image-host.settings.botSave')}</Label>}
+                    description={t('image-host.settings.botSaveHint')}
+                    control={<Switch id="image-host-bot-save" checked={draft.botSave} onCheckedChange={(botSave) => set('botSave', botSave)} />}
                 />
             </>
         ),

@@ -53,16 +53,20 @@
         "@chatluna/protocol": ">=2.0.0-alpha.0",
         "@chatluna/schema": ">=2.0.0-alpha.0",
         "@chatluna/server": ">=2.0.0-alpha.0",
+        "@chatluna/transform": ">=2.0.0-alpha.0",
         "@chatluna/ui-server": ">=2.0.0-alpha.0",
         "@chatluna/utils": ">=2.0.0-alpha.0",
         "cordis": "4.0.0-rc.12"
     },
     "devDependencies": {
         "@chatluna/agent": "workspace:*",
+        "@chatluna/message": "workspace:*",
         "@chatluna/prompt": "workspace:*",
         "@chatluna/protocol": "workspace:*",
         "@chatluna/schema": "workspace:*",
         "@chatluna/server": "workspace:*",
+        "@chatluna/tool": "workspace:*",
+        "@chatluna/transform": "workspace:*",
         "@chatluna/ui-client": "workspace:*",
         "@chatluna/ui-kit": "workspace:*",
         "@chatluna/ui-server": "workspace:*",
@@ -88,6 +92,7 @@
         "service": {
             "optional": [
                 "agents",
+                "tools",
                 "server",
                 "chatluna_server",
                 "chatluna_webui"

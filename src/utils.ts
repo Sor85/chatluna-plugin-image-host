@@ -71,6 +71,7 @@ export const DEFAULT_SETTINGS: Settings = {
     injectPrompt: true,
     baseUrl: '',
     maxFileSize: 10,
+    botSave: true,
 }
 
 /** 供平台下载图片的公开路由，只提供 Bot 可见分类；页面预览走另一条需要登录的路由。 */
